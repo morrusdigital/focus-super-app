@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'company_id',
+        'role',
     ];
 
     /**
@@ -44,5 +46,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isFinanceHolding(): bool
+    {
+        return $this->role === 'finance_holding';
+    }
+
+    public function isAdminCompany(): bool
+    {
+        return $this->role === 'admin_company';
     }
 }
