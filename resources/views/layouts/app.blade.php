@@ -94,40 +94,55 @@
                     <div class="mobile-back text-end"><span>Back</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
                   </li>
                   <li class="sidebar-main-title">
-                    <h6>Menu</h6>
+                    <div>
+                      <h6>Budget Planning</h6>
+                    </div>
                   </li>
-                  <li class="menu-box">
-                    <ul>
-                      @if (auth()->user()?->isAdminCompany())
-                        <li class="sidebar-list">
-                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.create') ? 'active' : '' }}"
-                             href="{{ route('budget-plans.create') }}">
-                            <i data-feather="plus-circle"></i><span>Ajukan BP</span>
-                          </a>
-                        </li>
-                        <li class="sidebar-list">
-                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') !== 'submitted' ? 'active' : '' }}"
-                             href="{{ route('budget-plans.index') }}">
-                            <i data-feather="file-text"></i><span>Daftar BP Saya</span>
-                          </a>
-                        </li>
-                      @endif
 
-                      @if (auth()->user()?->isFinanceHolding())
-                        <li class="sidebar-list">
-                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') === 'submitted' ? 'active' : '' }}"
-                             href="{{ route('budget-plans.index', ['status' => 'submitted']) }}">
-                            <i data-feather="clipboard"></i><span>Review BP</span>
-                          </a>
-                        </li>
-                        <li class="sidebar-list">
-                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') !== 'submitted' ? 'active' : '' }}"
-                             href="{{ route('budget-plans.index') }}">
-                            <i data-feather="list"></i><span>Semua BP</span>
-                          </a>
-                        </li>
-                      @endif
-                    </ul>
+                  @if (auth()->user()?->isAdminCompany())
+                    <li class="sidebar-list">
+                      <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.create') ? 'active' : '' }}"
+                         href="{{ route('budget-plans.create') }}">
+                        <i data-feather="plus-circle"></i><span>Ajukan BP</span>
+                      </a>
+                    </li>
+                    <li class="sidebar-list">
+                      <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') !== 'submitted' ? 'active' : '' }}"
+                         href="{{ route('budget-plans.index') }}">
+                        <i data-feather="file-text"></i><span>Daftar BP Saya</span>
+                      </a>
+                    </li>
+                  @endif
+
+                  @if (auth()->user()?->isFinanceHolding())
+                    <li class="sidebar-list">
+                      <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') === 'submitted' ? 'active' : '' }}"
+                         href="{{ route('budget-plans.index', ['status' => 'submitted']) }}">
+                        <i data-feather="clipboard"></i><span>Review BP</span>
+                      </a>
+                    </li>
+                    <li class="sidebar-list">
+                      <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') !== 'submitted' ? 'active' : '' }}"
+                         href="{{ route('budget-plans.index') }}">
+                        <i data-feather="list"></i><span>Semua BP</span>
+                      </a>
+                    </li>
+                  @endif
+
+                  <li class="sidebar-main-title">
+                    <div>
+                      <h6>Project Management</h6>
+                    </div>
+                  </li>
+                  <li class="sidebar-list">
+                    <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                      <i data-feather="pie-chart"></i><span>Portfolio Dashboard</span>
+                    </a>
+                  </li>
+                  <li class="sidebar-list">
+                    <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">
+                      <i data-feather="briefcase"></i><span>Projects</span>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -135,6 +150,24 @@
           </div>
         </div>
         <div class="page-body">
+          @if(session('success'))
+            <div class="container-fluid">
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa fa-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            </div>
+          @endif
+
+          @if(session('error'))
+            <div class="container-fluid">
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fa fa-exclamation-circle me-2"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            </div>
+          @endif
+
           @yield('content')
         </div>
       </div>
@@ -151,8 +184,26 @@
     <script src="../assets/js/scrollbar/custom.js"></script>
     <!-- Sidebar jquery-->
     <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/sidebar-menu.js"></script>
     <!-- Theme js-->
     <script src="../assets/js/script.js"></script>
+    <script>
+      // Hide loader immediately
+      document.addEventListener('DOMContentLoaded', function () {
+        var loader = document.querySelector('.loader-wrapper');
+        if (loader) {
+          loader.style.display = 'none';
+        }
+      });
+
+      window.addEventListener('load', function () {
+        var loader = document.querySelector('.loader-wrapper');
+        if (loader) {
+          loader.style.display = 'none';
+        }
+      });
+    </script>
+
     @stack('scripts')
   </body>
 </html>
