@@ -27,13 +27,17 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Nama Project</label>
               <input class="form-control" name="name" type="text" value="{{ old('name') }}" required>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Alamat Project</label>
               <input class="form-control" name="address" type="text" value="{{ old('address') }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tanggal Start Kerja</label>
+              <input class="form-control" name="start_work_date" type="date" value="{{ old('start_work_date') }}">
             </div>
             <div class="col-md-4">
               <label class="form-label">Nilai Kontrak SPK</label>

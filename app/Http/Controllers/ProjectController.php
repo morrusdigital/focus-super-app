@@ -70,6 +70,10 @@ class ProjectController extends Controller
                 ->with(['vendor', 'chartAccount'])
                 ->latest('expense_date')
                 ->latest('id'),
+            'progresses' => fn ($query) => $query
+                ->with('creator')
+                ->orderBy('progress_date')
+                ->orderBy('id'),
             'receipts' => fn ($query) => $query
                 ->with(['allocations.term', 'approver'])
                 ->latest('receipt_date')
@@ -83,9 +87,27 @@ class ProjectController extends Controller
             ->orderBy('name')
             ->get();
 
+        $progressHistory = $project->progresses
+            ->values()
+            ->map(function ($progress, int $index) use ($project) {
+                $previous = $index > 0 ? $project->progresses[$index - 1] : null;
+                $delta = $previous
+                    ? round((float) $progress->progress_percent - (float) $previous->progress_percent, 2)
+                    : null;
+
+                return (object) [
+                    'progress' => $progress,
+                    'previous_percent' => $previous ? (float) $previous->progress_percent : null,
+                    'delta_percent' => $delta,
+                ];
+            })
+            ->reverse()
+            ->values();
+
         return view('projects.show', [
             'project' => $project,
             'chartAccounts' => $chartAccounts,
+            'progressHistory' => $progressHistory,
         ]);
     }
 
@@ -127,6 +149,7 @@ class ProjectController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
+            'start_work_date' => ['nullable', 'date'],
             'contract_value' => ['required', 'numeric', 'min:0'],
             'use_pph' => ['required', 'boolean'],
             'pph_tax_master_id' => [
@@ -172,6 +195,7 @@ class ProjectController extends Controller
             'company_id' => $companyId,
             'name' => $data['name'],
             'address' => $data['address'],
+            'start_work_date' => $data['start_work_date'] ?? null,
             'contract_value' => $data['contract_value'],
             'use_pph' => $usePph,
             'pph_tax_master_id' => $usePph ? $pphMaster?->id : null,

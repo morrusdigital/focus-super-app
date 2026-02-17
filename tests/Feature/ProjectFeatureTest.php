@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\TaxMaster;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ProjectFeatureTest extends TestCase
@@ -215,5 +216,38 @@ class ProjectFeatureTest extends TestCase
         $response->assertSee('Rp 97.500.000,00');
         $response->assertSee('Nominal PPH');
         $response->assertSee('Rp 2.500.000,00');
+    }
+
+    public function test_project_show_displays_start_work_date_and_elapsed_days(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 2, 17, 10, 0, 0));
+
+        $company = Company::create([
+            'name' => 'Company G',
+            'type' => 'company',
+        ]);
+
+        $admin = User::factory()->create([
+            'company_id' => $company->id,
+            'role' => 'admin_company',
+        ]);
+
+        $project = Project::create([
+            'company_id' => $company->id,
+            'name' => 'Project Start',
+            'address' => 'Jl. Start',
+            'start_work_date' => '2026-02-01',
+            'contract_value' => 100000000,
+            'use_pph' => false,
+            'use_ppn' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('projects.show', $project));
+        $response->assertOk();
+        $response->assertSee('Tanggal Start Kerja');
+        $response->assertSee('01/02/2026');
+        $response->assertSee('16 hari');
+
+        Carbon::setTestNow();
     }
 }

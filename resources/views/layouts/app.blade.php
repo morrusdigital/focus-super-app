@@ -118,6 +118,12 @@
                           </a>
                         </li>
                         <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('project-recaps.*') ? 'active' : '' }}"
+                             href="{{ route('project-recaps.index') }}">
+                            <i data-feather="bar-chart-2"></i><span>Rekap Project</span>
+                          </a>
+                        </li>
+                        <li class="sidebar-list">
                           <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('bank-accounts.*') ? 'active' : '' }}"
                              href="{{ route('bank-accounts.index') }}">
                             <i data-feather="credit-card"></i><span>Rekening</span>
@@ -149,6 +155,12 @@
                           <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('projects.*') ? 'active' : '' }}"
                              href="{{ route('projects.index') }}">
                             <i data-feather="layers"></i><span>Projects</span>
+                          </a>
+                        </li>
+                        <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('project-recaps.*') ? 'active' : '' }}"
+                             href="{{ route('project-recaps.index') }}">
+                            <i data-feather="bar-chart-2"></i><span>Rekap Project</span>
                           </a>
                         </li>
                         <li class="sidebar-list">

@@ -9,10 +9,16 @@ class Project extends Model
 {
     use HasFactory;
 
+    public const COMPANY_RIGHT_RATE = 0.20;
+    public const FEE_SELES_RATE = 0.015;
+    public const WORKING_CAPITAL_RATE = 0.785;
+    public const DISCONTO_RATE = 0.10;
+
     protected $fillable = [
         'company_id',
         'name',
         'address',
+        'start_work_date',
         'contract_value',
         'use_pph',
         'pph_tax_master_id',
@@ -25,6 +31,7 @@ class Project extends Model
 
     protected $casts = [
         'contract_value' => 'decimal:2',
+        'start_work_date' => 'date',
         'use_pph' => 'boolean',
         'pph_rate' => 'decimal:2',
         'use_ppn' => 'boolean',
@@ -65,6 +72,11 @@ class Project extends Model
     public function expenses()
     {
         return $this->hasMany(ProjectExpense::class);
+    }
+
+    public function progresses()
+    {
+        return $this->hasMany(ProjectProgress::class);
     }
 
     public function isTaxConfigurationComplete(): bool
@@ -175,5 +187,63 @@ class Project extends Model
         }
 
         return (float) $this->terms()->get()->sum(fn (ProjectTerm $term) => $term->outstanding_amount);
+    }
+
+    public function getOutstandingContractValueAttribute(): ?float
+    {
+        if ($this->net_contract_value === null) {
+            return null;
+        }
+
+        $outstanding = (float) $this->net_contract_value - $this->total_received_amount;
+
+        return max(0, round($outstanding, 2));
+    }
+
+    public function getCompanyRightAmountAttribute(): float
+    {
+        return round($this->total_received_amount * self::COMPANY_RIGHT_RATE, 2);
+    }
+
+    public function getFeeSelesAmountAttribute(): float
+    {
+        return round($this->total_received_amount * self::FEE_SELES_RATE, 2);
+    }
+
+    public function getWorkingCapitalAmountAttribute(): ?float
+    {
+        if ($this->net_contract_value === null) {
+            return null;
+        }
+
+        return round((float) $this->net_contract_value * self::WORKING_CAPITAL_RATE, 2);
+    }
+
+    public function getDiscontoAmountAttribute(): ?float
+    {
+        if ($this->working_days_elapsed === null) {
+            return null;
+        }
+
+        $daysElapsed = $this->working_days_elapsed;
+        if ($daysElapsed <= 30) {
+            return 0.0;
+        }
+
+        $base = $this->company_right_amount * self::DISCONTO_RATE;
+        $factor = ($daysElapsed / 30) - 1;
+
+        return round($base * $factor, 2);
+    }
+
+    public function getWorkingDaysElapsedAttribute(): ?int
+    {
+        if ($this->start_work_date === null) {
+            return null;
+        }
+
+        $days = (int) $this->start_work_date->startOfDay()->diffInDays(now()->startOfDay(), false);
+
+        return max(0, $days);
     }
 }

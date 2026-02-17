@@ -8,6 +8,8 @@ use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectReceiptController;
 use App\Http\Controllers\ProjectExpenseController;
+use App\Http\Controllers\ProjectProgressController;
+use App\Http\Controllers\ProjectRecapController;
 use App\Http\Controllers\ProjectTermController;
 use App\Http\Controllers\ProjectVendorController;
 use App\Http\Controllers\TaxMasterController;
@@ -36,6 +38,7 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.request-revision');
 
     Route::resource('projects', ProjectController::class);
+    Route::get('project-recaps', [ProjectRecapController::class, 'index'])->name('project-recaps.index');
     Route::get('projects/{project}/terms', [ProjectTermController::class, 'index'])->name('projects.terms.index');
     Route::post('projects/{project}/terms', [ProjectTermController::class, 'store'])->name('projects.terms.store');
     Route::put('projects/{project}/terms/{term}', [ProjectTermController::class, 'update'])->name('projects.terms.update');
@@ -51,6 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::post('projects/{project}/expenses', [ProjectExpenseController::class, 'store'])->name('projects.expenses.store');
     Route::put('projects/{project}/expenses/{expense}', [ProjectExpenseController::class, 'update'])->name('projects.expenses.update');
     Route::delete('projects/{project}/expenses/{expense}', [ProjectExpenseController::class, 'destroy'])->name('projects.expenses.destroy');
+
+    Route::get('projects/{project}/progresses', [ProjectProgressController::class, 'index'])->name('projects.progresses.index');
+    Route::post('projects/{project}/progresses', [ProjectProgressController::class, 'store'])->name('projects.progresses.store');
 
     Route::get('projects/{project}/receipts', [ProjectReceiptController::class, 'index'])->name('projects.receipts.index');
     Route::post('projects/{project}/receipts', [ProjectReceiptController::class, 'store'])->name('projects.receipts.store');

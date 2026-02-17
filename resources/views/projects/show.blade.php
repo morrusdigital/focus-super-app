@@ -66,6 +66,20 @@
                         <div class="fw-bold">{{ $project->address ?? '-' }}</div>
                     </div>
                     <div class="col-md-4">
+                        <div class="text-muted">Tanggal Start Kerja</div>
+                        <div class="fw-bold">{{ $project->start_work_date?->format('d/m/Y') ?? '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted">Hari Berjalan (Start Kerja s.d Hari Ini)</div>
+                        <div class="fw-bold">
+                            @if ($project->working_days_elapsed !== null)
+                                {{ number_format($project->working_days_elapsed, 0, ',', '.') }} hari
+                            @else
+                                -
+                            @endif
+                        </div>
+                    </div>
+                    <div class="col-md-4">
                         <div class="text-muted">Nilai Kontrak SPK</div>
                         <div class="fw-bold">
                             @if ($project->contract_value !== null)
@@ -175,6 +189,10 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses-pane"
                             type="button" role="tab">Expense Project</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="progress-tab" data-bs-toggle="tab" data-bs-target="#progress-pane"
+                            type="button" role="tab">Progress Kerja</button>
                     </li>
                 </ul>
             </div>
@@ -809,6 +827,110 @@
                                     @empty
                                         <tr>
                                             <td colspan="10" class="text-center">Belum ada expense project.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="progress-pane" role="tabpanel">
+                        @php
+                            $progressHistory = $progressHistory ?? collect();
+                            $latestProgress = $progressHistory->first();
+                        @endphp
+
+                        @can('manageProgress', $project)
+                            <div class="border rounded p-3 mb-3">
+                                <h6 class="mb-3">Input Progress Kerja</h6>
+                                <form method="post" action="{{ route('projects.progresses.store', $project) }}">
+                                    @csrf
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tanggal</label>
+                                            <input class="form-control" name="progress_date" type="date"
+                                                value="{{ now()->format('Y-m-d') }}" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Progress (%)</label>
+                                            <input class="form-control text-end" name="progress_percent" type="number"
+                                                step="0.01" min="0" max="100" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Catatan</label>
+                                            <input class="form-control" name="notes" type="text"
+                                                placeholder="Opsional">
+                                        </div>
+                                        <div class="col-md-12 text-end">
+                                            <button class="btn btn-primary" type="submit">Simpan Progress</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        @endcan
+
+                        @if ($latestProgress && $latestProgress->delta_percent !== null)
+                            <div class="alert alert-info py-2">
+                                Progress saat ini
+                                <strong>{{ number_format((float) $latestProgress->progress->progress_percent, 2, ',', '.') }}%</strong>,
+                                perubahan dari input sebelumnya:
+                                <strong>
+                                    @if ($latestProgress->delta_percent > 0)
+                                        naik {{ number_format((float) $latestProgress->delta_percent, 2, ',', '.') }}%
+                                    @elseif ($latestProgress->delta_percent < 0)
+                                        turun {{ number_format(abs((float) $latestProgress->delta_percent), 2, ',', '.') }}%
+                                    @else
+                                        tetap 0,00%
+                                    @endif
+                                </strong>.
+                            </div>
+                        @endif
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th class="text-end">Progress</th>
+                                        <th class="text-end">Progress Sebelumnya</th>
+                                        <th class="text-end">Perkembangan</th>
+                                        <th>Catatan</th>
+                                        <th>Diinput Oleh</th>
+                                        <th>Waktu Input</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($progressHistory as $row)
+                                        <tr>
+                                            <td>{{ $row->progress->progress_date?->format('d/m/Y') ?? '-' }}</td>
+                                            <td class="text-end">
+                                                {{ number_format((float) $row->progress->progress_percent, 2, ',', '.') }}%
+                                            </td>
+                                            <td class="text-end">
+                                                @if ($row->previous_percent !== null)
+                                                    {{ number_format((float) $row->previous_percent, 2, ',', '.') }}%
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="text-end">
+                                                @if ($row->delta_percent === null)
+                                                    -
+                                                @elseif ($row->delta_percent > 0)
+                                                    <span class="text-success">+{{ number_format((float) $row->delta_percent, 2, ',', '.') }}%</span>
+                                                @elseif ($row->delta_percent < 0)
+                                                    <span class="text-danger">-{{ number_format(abs((float) $row->delta_percent), 2, ',', '.') }}%</span>
+                                                @else
+                                                    0,00%
+                                                @endif
+                                            </td>
+                                            <td>{{ $row->progress->notes ?: '-' }}</td>
+                                            <td>{{ $row->progress->creator->name ?? '-' }}</td>
+                                            <td>{{ $row->progress->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="text-center">Belum ada history progress kerja.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
