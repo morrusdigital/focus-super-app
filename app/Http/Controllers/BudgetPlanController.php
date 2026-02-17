@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\BudgetPlan\ReviewBudgetPlanRequest;
-use App\Http\Requests\BudgetPlan\RecordRealExpenseRequest;
 use App\Http\Requests\BudgetPlan\StoreBudgetPlanRequest;
 use App\Http\Requests\BudgetPlan\SubmitBudgetPlanRequest;
 use App\Http\Requests\BudgetPlan\UpdateBudgetPlanRequest;
 use App\Models\BudgetPlan;
-use App\Models\BudgetPlanItem;
 use App\Models\BudgetPlanCategory;
 use App\Models\ChartAccount;
 use App\Models\CompanyBankAccount;
 use App\Models\Project;
+use App\Models\ProjectExpense;
 use App\Services\BudgetPlanService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -82,12 +81,11 @@ class BudgetPlanController extends Controller
         $summary = null;
         if ($company) {
             $saldoAwal = (float) ($company->saldo_awal ?? 0);
-            $totalRealExpense = (float) BudgetPlanItem::query()
-                ->whereHas('budgetPlan', function ($query) use ($company) {
-                    $query->where('company_id', $company->id)
-                        ->where('status', BudgetPlan::STATUS_APPROVED);
+            $totalRealExpense = (float) ProjectExpense::query()
+                ->whereHas('project', function ($query) use ($company) {
+                    $query->where('company_id', $company->id);
                 })
-                ->sum('real_amount');
+                ->sum('amount');
 
             $totalRequest = (float) BudgetPlan::query()
                 ->where('company_id', $company->id)
@@ -113,9 +111,6 @@ class BudgetPlanController extends Controller
         return view('budget_plans.show', [
             'budgetPlan' => $budgetPlan,
             'summary' => $summary,
-            'categories' => BudgetPlanCategory::where('company_id', $budgetPlan->company_id)
-                ->orderBy('name')
-                ->get(),
         ]);
     }
 
@@ -223,27 +218,6 @@ class BudgetPlanController extends Controller
             'actor_id' => $request->user()->id,
             'action' => 'revision_requested',
             'note' => $request->input('note'),
-        ]);
-
-        return redirect()->route('budget-plans.show', $budgetPlan);
-    }
-
-    public function recordExpense(RecordRealExpenseRequest $request, BudgetPlan $budgetPlan)
-    {
-        $items = $request->input('items', []);
-
-        foreach ($items as $itemId => $itemData) {
-            $budgetPlan->items()
-                ->whereKey($itemId)
-                ->update([
-                    'real_amount' => $itemData['real_amount'] ?? 0,
-                    'category' => $itemData['category'] ?? null,
-                ]);
-        }
-
-        $budgetPlan->logs()->create([
-            'actor_id' => $request->user()->id,
-            'action' => 'real_expense_recorded',
         ]);
 
         return redirect()->route('budget-plans.show', $budgetPlan);

@@ -168,6 +168,14 @@
                         <button class="nav-link" id="receipts-tab" data-bs-toggle="tab" data-bs-target="#receipts-pane"
                             type="button" role="tab">Dana Masuk</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="vendors-tab" data-bs-toggle="tab" data-bs-target="#vendors-pane"
+                            type="button" role="tab">Master Vendor</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses-pane"
+                            type="button" role="tab">Expense Project</button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -382,7 +390,7 @@
                                             <label class="form-label">Nominal</label>
                                             <input class="form-control text-end" id="receipt-amount" name="amount"
                                                 type="number" step="0.01" min="0.01"
-                                                value="{{ $defaultReceiptTerm ? (float) $defaultReceiptTerm->amount : '' }}"
+                                                value="{{ $defaultReceiptTerm ? (float) $defaultReceiptTerm->outstanding_amount : '' }}"
                                                 required>
                                         </div>
                                         <div class="col-md-2">
@@ -503,6 +511,310 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="tab-pane fade" id="vendors-pane" role="tabpanel">
+                        @can('manageVendors', $project)
+                            <div class="border rounded p-3 mb-3">
+                                <h6 class="mb-3">Tambah Vendor Project</h6>
+                                <form method="post" action="{{ route('projects.vendors.store', $project) }}">
+                                    @csrf
+                                    <div class="row g-3">
+                                        <div class="col-md-10">
+                                            <label class="form-label">Nama Vendor</label>
+                                            <input class="form-control" name="name" type="text" required>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                            <button class="btn btn-primary w-100" type="submit">Simpan</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        @endcan
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Vendor</th>
+                                        <th class="text-end">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($project->vendors as $vendor)
+                                        <tr>
+                                            <td>{{ $vendor->name }}</td>
+                                            <td class="text-end">
+                                                @can('manageVendors', $project)
+                                                    <details class="d-inline-block">
+                                                        <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
+                                                        <div class="mt-2 p-2 border rounded bg-light text-start"
+                                                            style="min-width: 320px;">
+                                                            <form method="post"
+                                                                action="{{ route('projects.vendors.update', [$project, $vendor]) }}">
+                                                                @csrf
+                                                                @method('put')
+                                                                <div class="mb-2">
+                                                                    <label class="form-label mb-1">Nama Vendor</label>
+                                                                    <input class="form-control form-control-sm"
+                                                                        name="name" type="text"
+                                                                        value="{{ $vendor->name }}" required>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    <button class="btn btn-sm btn-primary"
+                                                                        type="submit">Simpan</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </details>
+                                                    <form class="d-inline" method="post"
+                                                        action="{{ route('projects.vendors.destroy', [$project, $vendor]) }}"
+                                                        onsubmit="return confirm('Hapus vendor ini?')">
+                                                        @csrf
+                                                        @method('delete')
+                                                        <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                                                    </form>
+                                                @else
+                                                    -
+                                                @endcan
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="2" class="text-center">Belum ada vendor project.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="expenses-pane" role="tabpanel">
+                        @php
+                            $chartAccounts = $chartAccounts ?? collect();
+                        @endphp
+
+                        @can('manageExpenses', $project)
+                            <div class="border rounded p-3 mb-3">
+                                <h6 class="mb-3">Input Expense Project</h6>
+                                <form method="post" action="{{ route('projects.expenses.store', $project) }}">
+                                    @csrf
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Item</label>
+                                            <input class="form-control" name="item_name" type="text" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Akun</label>
+                                            <select class="form-select" name="chart_account_id" required>
+                                                <option value="">-- Pilih Akun --</option>
+                                                @foreach ($chartAccounts as $account)
+                                                    <option value="{{ $account->id }}">{{ $account->code }} -
+                                                        {{ $account->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            @if ($chartAccounts->isEmpty())
+                                                <small class="text-danger d-block mt-1">Belum ada akun aktif untuk company
+                                                    project ini.</small>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Vendor</label>
+                                            <select class="form-select" name="vendor_id" required>
+                                                <option value="">-- Pilih Vendor --</option>
+                                                @foreach ($project->vendors as $vendor)
+                                                    <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            @if ($project->vendors->isEmpty())
+                                                <small class="text-danger d-block mt-1">Belum ada vendor project. Tambahkan
+                                                    dulu di tab Master Vendor.</small>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tanggal Pengeluaran</label>
+                                            <input class="form-control" name="expense_date" type="date"
+                                                value="{{ now()->format('Y-m-d') }}" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Harga Satuan</label>
+                                            <input class="form-control text-end js-expense-unit-price" name="unit_price"
+                                                type="number" step="0.01" min="0" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">QTY</label>
+                                            <input class="form-control text-end js-expense-quantity" name="quantity"
+                                                type="number" step="0.01" min="0.01" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Satuan</label>
+                                            <input class="form-control" name="unit" type="text" maxlength="50"
+                                                required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Jumlah</label>
+                                            <input class="form-control text-end js-expense-amount" type="number"
+                                                step="0.01" readonly>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Keterangan</label>
+                                            <input class="form-control" name="notes" type="text">
+                                        </div>
+                                        <div class="col-md-12 text-end">
+                                            <button class="btn btn-primary" type="submit"
+                                                @disabled($chartAccounts->isEmpty() || $project->vendors->isEmpty())>Simpan Expense</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        @endcan
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Item</th>
+                                        <th>Akun</th>
+                                        <th>Vendor</th>
+                                        <th class="text-end">Harga Satuan</th>
+                                        <th class="text-end">QTY</th>
+                                        <th>Satuan</th>
+                                        <th class="text-end">Jumlah</th>
+                                        <th>Keterangan</th>
+                                        <th class="text-end">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($project->expenses as $expense)
+                                        <tr>
+                                            <td>{{ $expense->expense_date?->format('d/m/Y') ?? '-' }}</td>
+                                            <td>{{ $expense->item_name }}</td>
+                                            <td>{{ $expense->chartAccount ? $expense->chartAccount->code . ' - ' . $expense->chartAccount->name : '-' }}
+                                            </td>
+                                            <td>{{ $expense->vendor->name ?? '-' }}</td>
+                                            <td class="text-end">Rp {{ number_format($expense->unit_price, 2, ',', '.') }}
+                                            </td>
+                                            <td class="text-end">{{ number_format($expense->quantity, 2, ',', '.') }}</td>
+                                            <td>{{ $expense->unit }}</td>
+                                            <td class="text-end">Rp {{ number_format($expense->amount, 2, ',', '.') }}</td>
+                                            <td>{{ $expense->notes ?: '-' }}</td>
+                                            <td class="text-end">
+                                                @can('manageExpenses', $project)
+                                                    <details class="d-inline-block">
+                                                        <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
+                                                        <div class="mt-2 p-2 border rounded bg-light text-start"
+                                                            style="min-width: 460px;">
+                                                            <form method="post"
+                                                                action="{{ route('projects.expenses.update', [$project, $expense]) }}">
+                                                                @csrf
+                                                                @method('put')
+                                                                <div class="row g-2">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label mb-1">Item</label>
+                                                                        <input class="form-control form-control-sm"
+                                                                            name="item_name" type="text"
+                                                                            value="{{ $expense->item_name }}" required>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label mb-1">Tanggal</label>
+                                                                        <input class="form-control form-control-sm"
+                                                                            name="expense_date" type="date"
+                                                                            value="{{ $expense->expense_date?->format('Y-m-d') }}"
+                                                                            required>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label mb-1">Akun</label>
+                                                                        <select class="form-select form-select-sm"
+                                                                            name="chart_account_id" required>
+                                                                            <option value="">-- Pilih Akun --</option>
+                                                                            @foreach ($chartAccounts as $account)
+                                                                                <option value="{{ $account->id }}"
+                                                                                    @selected((int) $expense->chart_account_id === (int) $account->id)>
+                                                                                    {{ $account->code }} -
+                                                                                    {{ $account->name }}
+                                                                                </option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label mb-1">Vendor</label>
+                                                                        <select class="form-select form-select-sm"
+                                                                            name="vendor_id" required>
+                                                                            <option value="">-- Pilih Vendor --</option>
+                                                                            @foreach ($project->vendors as $vendor)
+                                                                                <option value="{{ $vendor->id }}"
+                                                                                    @selected((int) $expense->vendor_id === (int) $vendor->id)>
+                                                                                    {{ $vendor->name }}
+                                                                                </option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label mb-1">Harga Satuan</label>
+                                                                        <input
+                                                                            class="form-control form-control-sm text-end js-expense-unit-price"
+                                                                            name="unit_price" type="number" step="0.01"
+                                                                            min="0"
+                                                                            value="{{ number_format((float) $expense->unit_price, 2, '.', '') }}"
+                                                                            required>
+                                                                    </div>
+                                                                    <div class="col-md-3">
+                                                                        <label class="form-label mb-1">QTY</label>
+                                                                        <input
+                                                                            class="form-control form-control-sm text-end js-expense-quantity"
+                                                                            name="quantity" type="number" step="0.01"
+                                                                            min="0.01"
+                                                                            value="{{ number_format((float) $expense->quantity, 2, '.', '') }}"
+                                                                            required>
+                                                                    </div>
+                                                                    <div class="col-md-3">
+                                                                        <label class="form-label mb-1">Satuan</label>
+                                                                        <input class="form-control form-control-sm"
+                                                                            name="unit" type="text"
+                                                                            value="{{ $expense->unit }}" required>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <label class="form-label mb-1">Jumlah</label>
+                                                                        <input
+                                                                            class="form-control form-control-sm text-end js-expense-amount"
+                                                                            type="number" step="0.01" readonly
+                                                                            value="{{ number_format((float) $expense->amount, 2, '.', '') }}">
+                                                                    </div>
+                                                                    <div class="col-md-12">
+                                                                        <label class="form-label mb-1">Keterangan</label>
+                                                                        <input class="form-control form-control-sm"
+                                                                            name="notes" type="text"
+                                                                            value="{{ $expense->notes }}">
+                                                                    </div>
+                                                                    <div class="col-md-12 text-end">
+                                                                        <button class="btn btn-sm btn-primary"
+                                                                            type="submit">Simpan</button>
+                                                                    </div>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </details>
+                                                    <form class="d-inline" method="post"
+                                                        action="{{ route('projects.expenses.destroy', [$project, $expense]) }}"
+                                                        onsubmit="return confirm('Hapus expense ini?')">
+                                                        @csrf
+                                                        @method('delete')
+                                                        <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                                                    </form>
+                                                @else
+                                                    -
+                                                @endcan
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="10" class="text-center">Belum ada expense project.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -512,6 +824,8 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const roundTwo = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+
             const invoiceSelect = document.getElementById('receipt-term-id');
             const amountInput = document.getElementById('receipt-amount');
             const dppInput = document.getElementById('receipt-dpp');
@@ -521,43 +835,65 @@
             const pphRate = Number(@json($pphRateForReceipts));
             const ppnRate = Number(@json($ppnRateForReceipts));
 
-            if (!invoiceSelect || !amountInput || !dppInput || !pphInput || !ppnInput || !netInput) {
-                return;
+            if (invoiceSelect && amountInput && dppInput && pphInput && ppnInput && netInput) {
+                const syncTaxDetail = () => {
+                    const amount = Number(amountInput.value || 0);
+                    const validAmount = Number.isFinite(amount) && amount > 0 ? amount : 0;
+                    const dpp = ppnRate > 0 ? roundTwo(validAmount / (1 + (ppnRate / 100))) : roundTwo(validAmount);
+                    const ppn = ppnRate > 0 ? roundTwo(validAmount - dpp) : 0;
+                    const pph = pphRate > 0 ? roundTwo(dpp * (pphRate / 100)) : 0;
+                    const net = roundTwo(dpp - pph);
+
+                    dppInput.value = dpp.toFixed(2);
+                    ppnInput.value = ppn.toFixed(2);
+                    pphInput.value = pph.toFixed(2);
+                    netInput.value = net.toFixed(2);
+                };
+
+                const syncDefaultAmount = () => {
+                    const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+                    if (!selectedOption) {
+                        return;
+                    }
+
+                    const defaultAmount = selectedOption.dataset.defaultAmount;
+                    if (defaultAmount) {
+                        amountInput.value = defaultAmount;
+                    }
+
+                    syncTaxDetail();
+                };
+
+                invoiceSelect.addEventListener('change', syncDefaultAmount);
+                amountInput.addEventListener('input', syncTaxDetail);
+                syncDefaultAmount();
             }
 
-            const roundTwo = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+            const bindExpenseAmountFormula = (container) => {
+                const priceInput = container.querySelector('.js-expense-unit-price');
+                const qtyInput = container.querySelector('.js-expense-quantity');
+                const amountOutput = container.querySelector('.js-expense-amount');
 
-            const syncTaxDetail = () => {
-                const amount = Number(amountInput.value || 0);
-                const validAmount = Number.isFinite(amount) && amount > 0 ? amount : 0;
-                const dpp = ppnRate > 0 ? roundTwo(validAmount / (1 + (ppnRate / 100))) : roundTwo(validAmount);
-                const ppn = ppnRate > 0 ? roundTwo(validAmount - dpp) : 0;
-                const pph = pphRate > 0 ? roundTwo(dpp * (pphRate / 100)) : 0;
-                const net = roundTwo(dpp - pph);
-
-                dppInput.value = dpp.toFixed(2);
-                ppnInput.value = ppn.toFixed(2);
-                pphInput.value = pph.toFixed(2);
-                netInput.value = net.toFixed(2);
-            };
-
-            const syncDefaultAmount = () => {
-                const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
-                if (!selectedOption) {
+                if (!priceInput || !qtyInput || !amountOutput) {
                     return;
                 }
 
-                const defaultAmount = selectedOption.dataset.defaultAmount;
-                if (defaultAmount) {
-                    amountInput.value = defaultAmount;
-                }
+                const recalculateAmount = () => {
+                    const unitPrice = Number(priceInput.value || 0);
+                    const quantity = Number(qtyInput.value || 0);
+                    const safeUnitPrice = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 0;
+                    const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+                    const amount = roundTwo(safeUnitPrice * safeQuantity);
 
-                syncTaxDetail();
+                    amountOutput.value = amount.toFixed(2);
+                };
+
+                priceInput.addEventListener('input', recalculateAmount);
+                qtyInput.addEventListener('input', recalculateAmount);
+                recalculateAmount();
             };
 
-            invoiceSelect.addEventListener('change', syncDefaultAmount);
-            amountInput.addEventListener('input', syncTaxDetail);
-            syncDefaultAmount();
+            document.querySelectorAll('#expenses-pane form').forEach((form) => bindExpenseAmountFormula(form));
         });
     </script>
 @endpush

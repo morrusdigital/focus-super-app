@@ -7,7 +7,9 @@ use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectReceiptController;
+use App\Http\Controllers\ProjectExpenseController;
 use App\Http\Controllers\ProjectTermController;
+use App\Http\Controllers\ProjectVendorController;
 use App\Http\Controllers\TaxMasterController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,8 +34,6 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.reject');
     Route::post('budget-plans/{budget_plan}/request-revision', [BudgetPlanController::class, 'requestRevision'])
         ->name('budget-plans.request-revision');
-    Route::post('budget-plans/{budget_plan}/record-expense', [BudgetPlanController::class, 'recordExpense'])
-        ->name('budget-plans.record-expense');
 
     Route::resource('projects', ProjectController::class);
     Route::get('projects/{project}/terms', [ProjectTermController::class, 'index'])->name('projects.terms.index');
@@ -41,6 +41,16 @@ Route::middleware('auth')->group(function () {
     Route::put('projects/{project}/terms/{term}', [ProjectTermController::class, 'update'])->name('projects.terms.update');
     Route::delete('projects/{project}/terms/{term}', [ProjectTermController::class, 'destroy'])->name('projects.terms.destroy');
     Route::post('projects/{project}/terms/{term}/mark-sent', [ProjectTermController::class, 'markSent'])->name('project-terms.mark-sent');
+
+    Route::get('projects/{project}/vendors', [ProjectVendorController::class, 'index'])->name('projects.vendors.index');
+    Route::post('projects/{project}/vendors', [ProjectVendorController::class, 'store'])->name('projects.vendors.store');
+    Route::put('projects/{project}/vendors/{vendor}', [ProjectVendorController::class, 'update'])->name('projects.vendors.update');
+    Route::delete('projects/{project}/vendors/{vendor}', [ProjectVendorController::class, 'destroy'])->name('projects.vendors.destroy');
+
+    Route::get('projects/{project}/expenses', [ProjectExpenseController::class, 'index'])->name('projects.expenses.index');
+    Route::post('projects/{project}/expenses', [ProjectExpenseController::class, 'store'])->name('projects.expenses.store');
+    Route::put('projects/{project}/expenses/{expense}', [ProjectExpenseController::class, 'update'])->name('projects.expenses.update');
+    Route::delete('projects/{project}/expenses/{expense}', [ProjectExpenseController::class, 'destroy'])->name('projects.expenses.destroy');
 
     Route::get('projects/{project}/receipts', [ProjectReceiptController::class, 'index'])->name('projects.receipts.index');
     Route::post('projects/{project}/receipts', [ProjectReceiptController::class, 'store'])->name('projects.receipts.store');

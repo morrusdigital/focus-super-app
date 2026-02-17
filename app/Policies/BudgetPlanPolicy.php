@@ -84,24 +84,6 @@ class BudgetPlanPolicy
         return $this->canFinanceAct($user, $budgetPlan);
     }
 
-    public function recordExpense(User $user, BudgetPlan $budgetPlan): bool
-    {
-        if (! $user->isFinanceHolding()) {
-            return false;
-        }
-
-        $holdingId = $this->isFinanceHolding($user);
-        if ($holdingId === null) {
-            return false;
-        }
-
-        if ($budgetPlan->status !== BudgetPlan::STATUS_APPROVED) {
-            return false;
-        }
-
-        return $this->isUnderHolding($budgetPlan->company_id, $holdingId);
-    }
-
     private function canFinanceAct(User $user, BudgetPlan $budgetPlan): bool
     {
         $holdingId = $this->isFinanceHolding($user);

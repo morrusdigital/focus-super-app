@@ -19,7 +19,6 @@
       'revision_requested' => 'badge-light-warning',
   ];
 
-  $categories = $categories ?? collect();
   $submissionDate = $budgetPlan->submission_date;
   $weekOfMonthDisplay = $budgetPlan->week_of_month;
   if ($weekOfMonthDisplay === null && $submissionDate) {
@@ -192,71 +191,6 @@
         </div>
       </div>
     </div>
-
-    @can('recordExpense', $budgetPlan)
-      <div class="card">
-        <div class="card-header pb-0">
-          <h5>Input Real Expense</h5>
-        </div>
-        <div class="card-body">
-          <form method="post" action="{{ route('budget-plans.record-expense', $budgetPlan) }}">
-            @csrf
-            <div class="table-responsive">
-              <table class="table table-bordered align-middle">
-                <thead>
-                  <tr>
-                    <th>PROJECT</th>
-                    <th>AKUN</th>
-                    <th>REKENING</th>
-                    <th>ITEM</th>
-                    <th>VENDOR</th>
-                    <th>KATEGORI</th>
-                    <th class="text-end">REALISASI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @forelse ($budgetPlan->items as $item)
-                    <tr>
-                      <td>{{ $item->project->name ?? '-' }}</td>
-                      <td>{{ $item->chartAccount ? $item->chartAccount->code . ' - ' . $item->chartAccount->name : '-' }}</td>
-                      <td>
-                        @if ($item->bankAccount)
-                          {{ $item->bankAccount->bank_name }} - {{ $item->bankAccount->account_number }}
-                        @else
-                          -
-                        @endif
-                      </td>
-                      <td>{{ $item->item_name }}</td>
-                      <td>{{ $item->vendor_name ?? '-' }}</td>
-                      <td>
-                        <select class="form-select" name="items[{{ $item->id }}][category]" required>
-                          <option value="">-- Pilih --</option>
-                          @foreach ($categories as $category)
-                            <option value="{{ $category->name }}" @selected(old('items.' . $item->id . '.category', $item->category) === $category->name)>
-                              {{ $category->name }}
-                            </option>
-                          @endforeach
-                        </select>
-                      </td>
-                      <td>
-                        <input class="form-control text-end" name="items[{{ $item->id }}][real_amount]" type="number" step="0.01" min="0" value="{{ old('items.' . $item->id . '.real_amount', $item->real_amount) }}" required>
-                      </td>
-                    </tr>
-                  @empty
-                <tr>
-                  <td colspan="7" class="text-center">Belum ada item.</td>
-                </tr>
-                  @endforelse
-                </tbody>
-              </table>
-            </div>
-            <div class="text-end">
-              <button class="btn btn-primary" type="submit">Simpan Real Expense</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    @endcan
 
     <div class="card">
       <div class="card-header pb-0">

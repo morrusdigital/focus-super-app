@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChartAccount;
 use App\Models\Project;
 use App\Models\TaxMaster;
 use Illuminate\Http\Request;
@@ -64,14 +65,27 @@ class ProjectController extends Controller
             'pphTaxMaster',
             'ppnTaxMaster',
             'terms' => fn ($query) => $query->orderBy('sequence_no'),
+            'vendors' => fn ($query) => $query->orderBy('name'),
+            'expenses' => fn ($query) => $query
+                ->with(['vendor', 'chartAccount'])
+                ->latest('expense_date')
+                ->latest('id'),
             'receipts' => fn ($query) => $query
                 ->with(['allocations.term', 'approver'])
                 ->latest('receipt_date')
                 ->latest('id'),
         ]);
 
+        $chartAccounts = ChartAccount::query()
+            ->where('company_id', $project->company_id)
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->orderBy('name')
+            ->get();
+
         return view('projects.show', [
             'project' => $project,
+            'chartAccounts' => $chartAccounts,
         ]);
     }
 

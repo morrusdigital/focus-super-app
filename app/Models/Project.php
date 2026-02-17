@@ -57,6 +57,16 @@ class Project extends Model
         return $this->hasMany(ProjectReceipt::class);
     }
 
+    public function vendors()
+    {
+        return $this->hasMany(ProjectVendor::class);
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(ProjectExpense::class);
+    }
+
     public function isTaxConfigurationComplete(): bool
     {
         if (blank($this->name) || blank($this->address) || $this->contract_value === null) {

@@ -58,6 +58,16 @@ class ProjectPolicy
         return false;
     }
 
+    public function manageVendors(User $user, Project $project): bool
+    {
+        return $user->isAdminCompany() && $project->company_id === $user->company_id;
+    }
+
+    public function manageExpenses(User $user, Project $project): bool
+    {
+        return $user->isAdminCompany() && $project->company_id === $user->company_id;
+    }
+
     public function approvePartialReceipt(User $user, Project $project): bool
     {
         return $user->isFinanceHolding() && (int) ($project->company?->parent_id ?? 0) === (int) $user->company_id;
