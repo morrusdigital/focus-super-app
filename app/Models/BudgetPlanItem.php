@@ -58,4 +58,10 @@ class BudgetPlanItem extends Model
     {
         return $this->belongsTo(ChartAccount::class);
     }
+
+    public function realizations()
+    {
+        return $this->hasMany(ProjectExpense::class, 'budget_plan_item_id')
+            ->where('expense_source', ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION);
+    }
 }

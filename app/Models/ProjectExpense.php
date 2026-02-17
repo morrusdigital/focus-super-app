@@ -9,8 +9,14 @@ class ProjectExpense extends Model
 {
     use HasFactory;
 
+    public const SOURCE_MANUAL_PROJECT = 'manual_project';
+    public const SOURCE_BUDGET_PLAN_REALIZATION = 'budget_plan_realization';
+
     protected $fillable = [
         'project_id',
+        'budget_plan_id',
+        'budget_plan_item_id',
+        'expense_source',
         'vendor_id',
         'chart_account_id',
         'expense_date',
@@ -39,6 +45,16 @@ class ProjectExpense extends Model
     public function vendor()
     {
         return $this->belongsTo(ProjectVendor::class, 'vendor_id');
+    }
+
+    public function budgetPlan()
+    {
+        return $this->belongsTo(BudgetPlan::class);
+    }
+
+    public function budgetPlanItem()
+    {
+        return $this->belongsTo(BudgetPlanItem::class);
     }
 
     public function chartAccount()

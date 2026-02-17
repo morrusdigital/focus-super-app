@@ -699,6 +699,7 @@
                                         <th>Satuan</th>
                                         <th class="text-end">Jumlah</th>
                                         <th>Keterangan</th>
+                                        <th>Sumber</th>
                                         <th class="text-end">Aksi</th>
                                     </tr>
                                 </thead>
@@ -716,109 +717,125 @@
                                             <td>{{ $expense->unit }}</td>
                                             <td class="text-end">Rp {{ number_format($expense->amount, 2, ',', '.') }}</td>
                                             <td>{{ $expense->notes ?: '-' }}</td>
+                                            <td>
+                                                @if ($expense->expense_source === \App\Models\ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION)
+                                                    <span class="badge badge-light-primary">BP Realisasi</span>
+                                                    @if ($expense->budgetPlan)
+                                                        <small class="d-block mt-1">
+                                                            <a href="{{ route('budget-plans.show', $expense->budgetPlan) }}">{{ $expense->budgetPlan->bp_number }}</a>
+                                                        </small>
+                                                    @endif
+                                                @else
+                                                    <span class="badge badge-light-secondary">Manual Project</span>
+                                                @endif
+                                            </td>
                                             <td class="text-end">
                                                 @can('manageExpenses', $project)
-                                                    <details class="d-inline-block">
-                                                        <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
-                                                        <div class="mt-2 p-2 border rounded bg-light text-start"
-                                                            style="min-width: 460px;">
-                                                            <form method="post"
-                                                                action="{{ route('projects.expenses.update', [$project, $expense]) }}">
-                                                                @csrf
-                                                                @method('put')
-                                                                <div class="row g-2">
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label mb-1">Item</label>
-                                                                        <input class="form-control form-control-sm"
-                                                                            name="item_name" type="text"
-                                                                            value="{{ $expense->item_name }}" required>
+                                                    @if ($expense->expense_source === \App\Models\ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION)
+                                                        <span class="text-muted">Kelola dari modul Realisasi BP</span>
+                                                    @else
+                                                        <details class="d-inline-block">
+                                                            <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
+                                                            <div class="mt-2 p-2 border rounded bg-light text-start"
+                                                                style="min-width: 460px;">
+                                                                <form method="post"
+                                                                    action="{{ route('projects.expenses.update', [$project, $expense]) }}">
+                                                                    @csrf
+                                                                    @method('put')
+                                                                    <div class="row g-2">
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label mb-1">Item</label>
+                                                                            <input class="form-control form-control-sm"
+                                                                                name="item_name" type="text"
+                                                                                value="{{ $expense->item_name }}" required>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label mb-1">Tanggal</label>
+                                                                            <input class="form-control form-control-sm"
+                                                                                name="expense_date" type="date"
+                                                                                value="{{ $expense->expense_date?->format('Y-m-d') }}"
+                                                                                required>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label mb-1">Akun</label>
+                                                                            <select class="form-select form-select-sm"
+                                                                                name="chart_account_id" required>
+                                                                                <option value="">-- Pilih Akun --</option>
+                                                                                @foreach ($chartAccounts as $account)
+                                                                                    <option value="{{ $account->id }}"
+                                                                                        @selected((int) $expense->chart_account_id === (int) $account->id)>
+                                                                                        {{ $account->code }} -
+                                                                                        {{ $account->name }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <label class="form-label mb-1">Vendor</label>
+                                                                            <select class="form-select form-select-sm"
+                                                                                name="vendor_id" required>
+                                                                                <option value="">-- Pilih Vendor --</option>
+                                                                                @foreach ($project->vendors as $vendor)
+                                                                                    <option value="{{ $vendor->id }}"
+                                                                                        @selected((int) $expense->vendor_id === (int) $vendor->id)>
+                                                                                        {{ $vendor->name }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label mb-1">Harga Satuan</label>
+                                                                            <input
+                                                                                class="form-control form-control-sm text-end js-expense-unit-price"
+                                                                                name="unit_price" type="number" step="0.01"
+                                                                                min="0"
+                                                                                value="{{ number_format((float) $expense->unit_price, 2, '.', '') }}"
+                                                                                required>
+                                                                        </div>
+                                                                        <div class="col-md-3">
+                                                                            <label class="form-label mb-1">QTY</label>
+                                                                            <input
+                                                                                class="form-control form-control-sm text-end js-expense-quantity"
+                                                                                name="quantity" type="number" step="0.01"
+                                                                                min="0.01"
+                                                                                value="{{ number_format((float) $expense->quantity, 2, '.', '') }}"
+                                                                                required>
+                                                                        </div>
+                                                                        <div class="col-md-3">
+                                                                            <label class="form-label mb-1">Satuan</label>
+                                                                            <input class="form-control form-control-sm"
+                                                                                name="unit" type="text"
+                                                                                value="{{ $expense->unit }}" required>
+                                                                        </div>
+                                                                        <div class="col-md-2">
+                                                                            <label class="form-label mb-1">Jumlah</label>
+                                                                            <input
+                                                                                class="form-control form-control-sm text-end js-expense-amount"
+                                                                                type="number" step="0.01" readonly
+                                                                                value="{{ number_format((float) $expense->amount, 2, '.', '') }}">
+                                                                        </div>
+                                                                        <div class="col-md-12">
+                                                                            <label class="form-label mb-1">Keterangan</label>
+                                                                            <input class="form-control form-control-sm"
+                                                                                name="notes" type="text"
+                                                                                value="{{ $expense->notes }}">
+                                                                        </div>
+                                                                        <div class="col-md-12 text-end">
+                                                                            <button class="btn btn-sm btn-primary"
+                                                                                type="submit">Simpan</button>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label mb-1">Tanggal</label>
-                                                                        <input class="form-control form-control-sm"
-                                                                            name="expense_date" type="date"
-                                                                            value="{{ $expense->expense_date?->format('Y-m-d') }}"
-                                                                            required>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label mb-1">Akun</label>
-                                                                        <select class="form-select form-select-sm"
-                                                                            name="chart_account_id" required>
-                                                                            <option value="">-- Pilih Akun --</option>
-                                                                            @foreach ($chartAccounts as $account)
-                                                                                <option value="{{ $account->id }}"
-                                                                                    @selected((int) $expense->chart_account_id === (int) $account->id)>
-                                                                                    {{ $account->code }} -
-                                                                                    {{ $account->name }}
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label mb-1">Vendor</label>
-                                                                        <select class="form-select form-select-sm"
-                                                                            name="vendor_id" required>
-                                                                            <option value="">-- Pilih Vendor --</option>
-                                                                            @foreach ($project->vendors as $vendor)
-                                                                                <option value="{{ $vendor->id }}"
-                                                                                    @selected((int) $expense->vendor_id === (int) $vendor->id)>
-                                                                                    {{ $vendor->name }}
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label mb-1">Harga Satuan</label>
-                                                                        <input
-                                                                            class="form-control form-control-sm text-end js-expense-unit-price"
-                                                                            name="unit_price" type="number" step="0.01"
-                                                                            min="0"
-                                                                            value="{{ number_format((float) $expense->unit_price, 2, '.', '') }}"
-                                                                            required>
-                                                                    </div>
-                                                                    <div class="col-md-3">
-                                                                        <label class="form-label mb-1">QTY</label>
-                                                                        <input
-                                                                            class="form-control form-control-sm text-end js-expense-quantity"
-                                                                            name="quantity" type="number" step="0.01"
-                                                                            min="0.01"
-                                                                            value="{{ number_format((float) $expense->quantity, 2, '.', '') }}"
-                                                                            required>
-                                                                    </div>
-                                                                    <div class="col-md-3">
-                                                                        <label class="form-label mb-1">Satuan</label>
-                                                                        <input class="form-control form-control-sm"
-                                                                            name="unit" type="text"
-                                                                            value="{{ $expense->unit }}" required>
-                                                                    </div>
-                                                                    <div class="col-md-2">
-                                                                        <label class="form-label mb-1">Jumlah</label>
-                                                                        <input
-                                                                            class="form-control form-control-sm text-end js-expense-amount"
-                                                                            type="number" step="0.01" readonly
-                                                                            value="{{ number_format((float) $expense->amount, 2, '.', '') }}">
-                                                                    </div>
-                                                                    <div class="col-md-12">
-                                                                        <label class="form-label mb-1">Keterangan</label>
-                                                                        <input class="form-control form-control-sm"
-                                                                            name="notes" type="text"
-                                                                            value="{{ $expense->notes }}">
-                                                                    </div>
-                                                                    <div class="col-md-12 text-end">
-                                                                        <button class="btn btn-sm btn-primary"
-                                                                            type="submit">Simpan</button>
-                                                                    </div>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </details>
-                                                    <form class="d-inline" method="post"
-                                                        action="{{ route('projects.expenses.destroy', [$project, $expense]) }}"
-                                                        onsubmit="return confirm('Hapus expense ini?')">
-                                                        @csrf
-                                                        @method('delete')
-                                                        <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
-                                                    </form>
+                                                                </form>
+                                                            </div>
+                                                        </details>
+                                                        <form class="d-inline" method="post"
+                                                            action="{{ route('projects.expenses.destroy', [$project, $expense]) }}"
+                                                            onsubmit="return confirm('Hapus expense ini?')">
+                                                            @csrf
+                                                            @method('delete')
+                                                            <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                                                        </form>
+                                                    @endif
                                                 @else
                                                     -
                                                 @endcan
@@ -826,7 +843,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="10" class="text-center">Belum ada expense project.</td>
+                                            <td colspan="11" class="text-center">Belum ada expense project.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

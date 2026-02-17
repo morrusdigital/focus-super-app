@@ -84,6 +84,19 @@ class BudgetPlanPolicy
         return $this->canFinanceAct($user, $budgetPlan);
     }
 
+    public function manageRealization(User $user, BudgetPlan $budgetPlan): bool
+    {
+        if (! $user->isAdminCompany()) {
+            return false;
+        }
+
+        if ($budgetPlan->company_id !== $user->company_id) {
+            return false;
+        }
+
+        return $budgetPlan->status === BudgetPlan::STATUS_APPROVED;
+    }
+
     private function canFinanceAct(User $user, BudgetPlan $budgetPlan): bool
     {
         $holdingId = $this->isFinanceHolding($user);

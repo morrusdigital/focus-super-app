@@ -71,4 +71,10 @@ class BudgetPlan extends Model
     {
         return $this->hasMany(BudgetPlanLog::class);
     }
+
+    public function realizations()
+    {
+        return $this->hasMany(ProjectExpense::class)
+            ->where('expense_source', ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION);
+    }
 }

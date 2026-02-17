@@ -12,6 +12,7 @@ use App\Models\ChartAccount;
 use App\Models\CompanyBankAccount;
 use App\Models\Project;
 use App\Models\ProjectExpense;
+use App\Models\ProjectVendor;
 use App\Services\BudgetPlanService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -75,7 +76,14 @@ class BudgetPlanController extends Controller
     {
         $this->authorize('view', $budgetPlan);
 
-        $budgetPlan->load(['items.project', 'items.bankAccount', 'items.chartAccount', 'logs.actor', 'company', 'requester']);
+        $budgetPlan->load([
+            'items.project.vendors',
+            'items.bankAccount',
+            'items.chartAccount',
+            'logs.actor',
+            'company',
+            'requester',
+        ]);
         $company = $budgetPlan->company;
 
         $summary = null;
@@ -108,9 +116,41 @@ class BudgetPlanController extends Controller
             ];
         }
 
+        $realizationSource = ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION;
+        $itemRealizedMap = ProjectExpense::query()
+            ->where('budget_plan_id', $budgetPlan->id)
+            ->where('expense_source', $realizationSource)
+            ->whereNotNull('budget_plan_item_id')
+            ->selectRaw('budget_plan_item_id, SUM(amount) as total_amount')
+            ->groupBy('budget_plan_item_id')
+            ->pluck('total_amount', 'budget_plan_item_id');
+
+        $realizations = ProjectExpense::query()
+            ->with(['project', 'chartAccount', 'vendor', 'budgetPlanItem'])
+            ->where('budget_plan_id', $budgetPlan->id)
+            ->where('expense_source', $realizationSource)
+            ->latest('expense_date')
+            ->latest('id')
+            ->get();
+
+        $projectIds = $budgetPlan->items
+            ->pluck('project_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $vendorsByProject = ProjectVendor::query()
+            ->whereIn('project_id', $projectIds)
+            ->orderBy('name')
+            ->get()
+            ->groupBy('project_id');
+
         return view('budget_plans.show', [
             'budgetPlan' => $budgetPlan,
             'summary' => $summary,
+            'itemRealizedMap' => $itemRealizedMap,
+            'realizations' => $realizations,
+            'vendorsByProject' => $vendorsByProject,
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectExpense;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProjectExpenseController extends Controller
 {
@@ -35,6 +36,7 @@ class ProjectExpenseController extends Controller
 
         $project->expenses()->create([
             'vendor_id' => (int) $data['vendor_id'],
+            'expense_source' => ProjectExpense::SOURCE_MANUAL_PROJECT,
             'chart_account_id' => (int) $data['chart_account_id'],
             'expense_date' => $data['expense_date'],
             'item_name' => $data['item_name'],
@@ -54,6 +56,7 @@ class ProjectExpenseController extends Controller
     {
         $this->authorize('manageExpenses', $project);
         $this->assertExpenseBelongsToProject($project, $expense);
+        $this->assertExpenseCanBeManagedFromProject($expense);
 
         $data = $this->validatePayload($request, $project);
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
@@ -78,6 +81,7 @@ class ProjectExpenseController extends Controller
     {
         $this->authorize('manageExpenses', $project);
         $this->assertExpenseBelongsToProject($project, $expense);
+        $this->assertExpenseCanBeManagedFromProject($expense);
 
         $expense->delete();
 
@@ -114,6 +118,15 @@ class ProjectExpenseController extends Controller
     {
         if ((int) $project->id !== (int) $expense->project_id) {
             abort(404);
+        }
+    }
+
+    private function assertExpenseCanBeManagedFromProject(ProjectExpense $expense): void
+    {
+        if ($expense->expense_source === ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION) {
+            throw ValidationException::withMessages([
+                'expense' => 'Expense dari realisasi BP hanya bisa diubah dari modul realisasi BP.',
+            ]);
         }
     }
 }

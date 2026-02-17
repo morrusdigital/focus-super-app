@@ -27,6 +27,9 @@
       $weekOfMonthDisplay = intdiv($offset + ($submissionDate->day - 1), 7) + 1;
   }
   $projectCountDisplay = $budgetPlan->project_count ?? $budgetPlan->items->pluck('project_id')->filter()->unique()->count();
+  $itemRealizedMap = collect($itemRealizedMap ?? []);
+  $realizations = $realizations ?? collect();
+  $vendorsByProject = $vendorsByProject ?? collect();
 @endphp
 
 @section('content')
@@ -162,6 +165,11 @@
             </thead>
             <tbody>
               @forelse ($budgetPlan->items as $item)
+                @php
+                  $realizedAmount = (float) ($itemRealizedMap->get($item->id) ?? 0);
+                  $lineTotal = (float) ($item->line_total ?? 0);
+                  $overBudgetAmount = max(0, round($realizedAmount - $lineTotal, 2));
+                @endphp
                 <tr>
                   <td>{{ $item->project->name ?? '-' }}</td>
                   <td>{{ $item->chartAccount ? $item->chartAccount->code . ' - ' . $item->chartAccount->name : '-' }}</td>
@@ -179,7 +187,15 @@
                   <td class="text-end">{{ number_format($item->quantity, 2, ',', '.') }}</td>
                   <td>{{ $item->unit }}</td>
                   <td class="text-end">{{ number_format($item->line_total, 2, ',', '.') }}</td>
-                  <td class="text-end">{{ number_format($item->real_amount, 2, ',', '.') }}</td>
+                  <td class="text-end">
+                    {{ number_format($realizedAmount, 2, ',', '.') }}
+                    @if ($overBudgetAmount > 0)
+                      <div class="mt-1">
+                        <span class="badge badge-light-danger">Over Budget</span>
+                        <small class="text-danger d-block">Selisih: Rp {{ number_format($overBudgetAmount, 2, ',', '.') }}</small>
+                      </div>
+                    @endif
+                  </td>
                 </tr>
               @empty
                 <tr>
@@ -191,6 +207,215 @@
         </div>
       </div>
     </div>
+
+    @if ($budgetPlan->status === 'approved' || $realizations->isNotEmpty())
+      @php
+        $realisableItems = $budgetPlan->items->filter(fn($item) => $item->project_id && $item->chart_account_id)->values();
+        $defaultItem = $realisableItems->first();
+        $defaultProjectVendors = $defaultItem ? ($vendorsByProject->get($defaultItem->project_id) ?? collect()) : collect();
+      @endphp
+      <div class="card">
+        <div class="card-header pb-0">
+          <h5>Realisasi Budget Plan</h5>
+        </div>
+        <div class="card-body">
+          @can('manageRealization', $budgetPlan)
+            <div class="border rounded p-3 mb-3">
+              <h6 class="mb-3">Input Realisasi</h6>
+              <form method="post" action="{{ route('budget-plans.realizations.store', $budgetPlan) }}" class="js-realization-form">
+                @csrf
+                <div class="row g-3">
+                  <div class="col-md-7">
+                    <label class="form-label">Item BP</label>
+                    <select class="form-select" id="realization-item-id" name="budget_plan_item_id" required>
+                      @if ($realisableItems->isEmpty())
+                        <option value="">Tidak ada item BP yang bisa direalisasikan</option>
+                      @else
+                        @foreach ($realisableItems as $item)
+                          @php
+                            $itemRealizedAmount = (float) ($itemRealizedMap->get($item->id) ?? 0);
+                            $itemRemaining = round((float) $item->line_total - $itemRealizedAmount, 2);
+                          @endphp
+                          <option value="{{ $item->id }}"
+                            data-project-id="{{ $item->project_id }}"
+                            {{ $defaultItem && $defaultItem->id === $item->id ? 'selected' : '' }}>
+                            {{ $item->project->name ?? '-' }} | {{ $item->chartAccount ? $item->chartAccount->code . ' - ' . $item->chartAccount->name : '-' }} | {{ $item->item_name }} | Budget Rp {{ number_format($item->line_total, 2, ',', '.') }} | Realisasi Rp {{ number_format($itemRealizedAmount, 2, ',', '.') }} | Sisa Rp {{ number_format($itemRemaining, 2, ',', '.') }}
+                          </option>
+                        @endforeach
+                      @endif
+                    </select>
+                    @if ($realisableItems->isEmpty())
+                      <small class="text-danger d-block mt-1">Item BP harus memiliki project dan akun agar bisa direalisasikan.</small>
+                    @endif
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Tanggal</label>
+                    <input class="form-control" name="expense_date" type="date" value="{{ now()->format('Y-m-d') }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Cari Vendor</label>
+                    <input class="form-control" id="realization-vendor-search" type="text" placeholder="Cari vendor existing">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Vendor Existing</label>
+                    <select class="form-select" id="realization-vendor-id" name="vendor_id">
+                      <option value="">-- Pilih Vendor --</option>
+                      @foreach ($defaultProjectVendors as $vendor)
+                        <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Vendor Baru (Opsional)</label>
+                    <input class="form-control" name="vendor_new_name" type="text" placeholder="Isi jika vendor belum ada">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">QTY</label>
+                    <input class="form-control text-end js-realization-qty" name="quantity" type="number" step="0.01" min="0.01" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Harga Satuan</label>
+                    <input class="form-control text-end js-realization-unit-price" name="unit_price" type="number" step="0.01" min="0" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Satuan</label>
+                    <input class="form-control" name="unit" type="text" maxlength="50" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Jumlah</label>
+                    <input class="form-control text-end js-realization-amount" type="number" step="0.01" readonly>
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label">Catatan</label>
+                    <input class="form-control" name="notes" type="text">
+                  </div>
+                  <div class="col-md-12 text-end">
+                    <button class="btn btn-primary" type="submit" @disabled($realisableItems->isEmpty())>Simpan Realisasi</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          @endcan
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Project</th>
+                  <th>Item BP</th>
+                  <th>Akun</th>
+                  <th>Vendor</th>
+                  <th class="text-end">QTY</th>
+                  <th>Satuan</th>
+                  <th class="text-end">Harga Satuan</th>
+                  <th class="text-end">Jumlah</th>
+                  <th>Catatan</th>
+                  <th class="text-end">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                @forelse ($realizations as $realization)
+                  @php
+                    $realizationVendors = $vendorsByProject->get($realization->project_id) ?? collect();
+                  @endphp
+                  <tr>
+                    <td>{{ $realization->expense_date?->format('d/m/Y') ?? '-' }}</td>
+                    <td>{{ $realization->project->name ?? '-' }}</td>
+                    <td>{{ $realization->budgetPlanItem?->item_name ?? '-' }}</td>
+                    <td>{{ $realization->chartAccount ? $realization->chartAccount->code . ' - ' . $realization->chartAccount->name : '-' }}</td>
+                    <td>{{ $realization->vendor->name ?? '-' }}</td>
+                    <td class="text-end">{{ number_format($realization->quantity, 2, ',', '.') }}</td>
+                    <td>{{ $realization->unit }}</td>
+                    <td class="text-end">{{ number_format($realization->unit_price, 2, ',', '.') }}</td>
+                    <td class="text-end">{{ number_format($realization->amount, 2, ',', '.') }}</td>
+                    <td>{{ $realization->notes ?: '-' }}</td>
+                    <td class="text-end">
+                      @can('manageRealization', $budgetPlan)
+                        <details class="d-inline-block">
+                          <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
+                          <div class="mt-2 p-2 border rounded bg-light text-start" style="min-width: 500px;">
+                            <form method="post" action="{{ route('budget-plans.realizations.update', [$budgetPlan, $realization]) }}" class="js-realization-form">
+                              @csrf
+                              @method('put')
+                              <div class="row g-2">
+                                <div class="col-md-6">
+                                  <label class="form-label mb-1">Project / Item (Locked)</label>
+                                  <input class="form-control form-control-sm" type="text"
+                                    value="{{ $realization->project->name ?? '-' }} - {{ $realization->item_name }}" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                  <label class="form-label mb-1">Tanggal</label>
+                                  <input class="form-control form-control-sm" name="expense_date" type="date"
+                                    value="{{ $realization->expense_date?->format('Y-m-d') }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                  <label class="form-label mb-1">Vendor Existing</label>
+                                  <select class="form-select form-select-sm" name="vendor_id">
+                                    <option value="">-- Pilih Vendor --</option>
+                                    @foreach ($realizationVendors as $vendor)
+                                      <option value="{{ $vendor->id }}" @selected((int) $realization->vendor_id === (int) $vendor->id)>{{ $vendor->name }}</option>
+                                    @endforeach
+                                  </select>
+                                </div>
+                                <div class="col-md-6">
+                                  <label class="form-label mb-1">Vendor Baru (Opsional)</label>
+                                  <input class="form-control form-control-sm" name="vendor_new_name" type="text" placeholder="Isi jika vendor baru">
+                                </div>
+                                <div class="col-md-2">
+                                  <label class="form-label mb-1">QTY</label>
+                                  <input class="form-control form-control-sm text-end js-realization-qty" name="quantity" type="number"
+                                    step="0.01" min="0.01" value="{{ number_format((float) $realization->quantity, 2, '.', '') }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                  <label class="form-label mb-1">Harga Satuan</label>
+                                  <input class="form-control form-control-sm text-end js-realization-unit-price" name="unit_price" type="number"
+                                    step="0.01" min="0" value="{{ number_format((float) $realization->unit_price, 2, '.', '') }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                  <label class="form-label mb-1">Satuan</label>
+                                  <input class="form-control form-control-sm" name="unit" type="text"
+                                    value="{{ $realization->unit }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                  <label class="form-label mb-1">Jumlah</label>
+                                  <input class="form-control form-control-sm text-end js-realization-amount" type="number"
+                                    step="0.01" value="{{ number_format((float) $realization->amount, 2, '.', '') }}" readonly>
+                                </div>
+                                <div class="col-md-12">
+                                  <label class="form-label mb-1">Catatan</label>
+                                  <input class="form-control form-control-sm" name="notes" type="text"
+                                    value="{{ $realization->notes }}">
+                                </div>
+                                <div class="col-md-12 text-end">
+                                  <button class="btn btn-sm btn-primary" type="submit">Simpan</button>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </details>
+                        <form class="d-inline" method="post" action="{{ route('budget-plans.realizations.destroy', [$budgetPlan, $realization]) }}"
+                          onsubmit="return confirm('Hapus transaksi realisasi ini?')">
+                          @csrf
+                          @method('delete')
+                          <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                        </form>
+                      @else
+                        -
+                      @endcan
+                    </td>
+                  </tr>
+                @empty
+                  <tr>
+                    <td colspan="11" class="text-center">Belum ada transaksi realisasi.</td>
+                  </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    @endif
 
     <div class="card">
       <div class="card-header pb-0">
@@ -266,3 +491,93 @@
     </div>
   </div>
 @endsection
+
+@push('scripts')
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const vendorsByProject = @json(
+        $vendorsByProject
+          ->map(fn ($vendors) => $vendors->map(fn ($vendor) => ['id' => $vendor->id, 'name' => $vendor->name])->values())
+          ->toArray()
+      );
+
+      const realizationItemSelect = document.getElementById('realization-item-id');
+      const realizationVendorSelect = document.getElementById('realization-vendor-id');
+      const realizationVendorSearch = document.getElementById('realization-vendor-search');
+
+      let currentVendors = [];
+
+      const renderVendorOptions = (selectedValue = '', searchTerm = '') => {
+        if (!realizationVendorSelect) {
+          return;
+        }
+
+        const keyword = String(searchTerm || '').trim().toLowerCase();
+        const filtered = keyword
+          ? currentVendors.filter((vendor) => String(vendor.name).toLowerCase().includes(keyword))
+          : currentVendors;
+
+        realizationVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>';
+
+        filtered.forEach((vendor) => {
+          const option = document.createElement('option');
+          option.value = String(vendor.id);
+          option.textContent = vendor.name;
+          if (selectedValue && String(vendor.id) === String(selectedValue)) {
+            option.selected = true;
+          }
+          realizationVendorSelect.appendChild(option);
+        });
+      };
+
+      const syncVendorBySelectedItem = () => {
+        if (!realizationItemSelect) {
+          return;
+        }
+
+        const selectedOption = realizationItemSelect.options[realizationItemSelect.selectedIndex];
+        const projectId = selectedOption ? selectedOption.dataset.projectId : null;
+        currentVendors = projectId && vendorsByProject[projectId] ? vendorsByProject[projectId] : [];
+        renderVendorOptions('', realizationVendorSearch ? realizationVendorSearch.value : '');
+      };
+
+      if (realizationItemSelect && realizationVendorSelect) {
+        syncVendorBySelectedItem();
+        realizationItemSelect.addEventListener('change', syncVendorBySelectedItem);
+      }
+
+      if (realizationVendorSearch) {
+        realizationVendorSearch.addEventListener('input', function () {
+          renderVendorOptions(realizationVendorSelect ? realizationVendorSelect.value : '', realizationVendorSearch.value);
+        });
+      }
+
+      const bindRealizationFormula = (formElement) => {
+        const qtyInput = formElement.querySelector('.js-realization-qty');
+        const unitPriceInput = formElement.querySelector('.js-realization-unit-price');
+        const amountOutput = formElement.querySelector('.js-realization-amount');
+
+        if (!qtyInput || !unitPriceInput || !amountOutput) {
+          return;
+        }
+
+        const recalc = () => {
+          const qty = Number(qtyInput.value || 0);
+          const unitPrice = Number(unitPriceInput.value || 0);
+          const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 0;
+          const safeUnitPrice = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 0;
+          const amount = Math.round((safeQty * safeUnitPrice + Number.EPSILON) * 100) / 100;
+          amountOutput.value = amount.toFixed(2);
+        };
+
+        qtyInput.addEventListener('input', recalc);
+        unitPriceInput.addEventListener('input', recalc);
+        recalc();
+      };
+
+      document.querySelectorAll('.js-realization-form').forEach((formElement) => {
+        bindRealizationFormula(formElement);
+      });
+    });
+  </script>
+@endpush

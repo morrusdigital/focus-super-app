@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BudgetPlanCategoryController;
 use App\Http\Controllers\BudgetPlanController;
+use App\Http\Controllers\BudgetPlanRealizationController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
@@ -36,6 +37,14 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.reject');
     Route::post('budget-plans/{budget_plan}/request-revision', [BudgetPlanController::class, 'requestRevision'])
         ->name('budget-plans.request-revision');
+    Route::get('budget-plans/{budget_plan}/realizations', [BudgetPlanRealizationController::class, 'index'])
+        ->name('budget-plans.realizations.index');
+    Route::post('budget-plans/{budget_plan}/realizations', [BudgetPlanRealizationController::class, 'store'])
+        ->name('budget-plans.realizations.store');
+    Route::put('budget-plans/{budget_plan}/realizations/{expense}', [BudgetPlanRealizationController::class, 'update'])
+        ->name('budget-plans.realizations.update');
+    Route::delete('budget-plans/{budget_plan}/realizations/{expense}', [BudgetPlanRealizationController::class, 'destroy'])
+        ->name('budget-plans.realizations.destroy');
 
     Route::resource('projects', ProjectController::class);
     Route::get('project-recaps', [ProjectRecapController::class, 'index'])->name('project-recaps.index');

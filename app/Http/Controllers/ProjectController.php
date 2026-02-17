@@ -67,7 +67,7 @@ class ProjectController extends Controller
             'terms' => fn ($query) => $query->orderBy('sequence_no'),
             'vendors' => fn ($query) => $query->orderBy('name'),
             'expenses' => fn ($query) => $query
-                ->with(['vendor', 'chartAccount'])
+                ->with(['vendor', 'chartAccount', 'budgetPlan'])
                 ->latest('expense_date')
                 ->latest('id'),
             'progresses' => fn ($query) => $query
