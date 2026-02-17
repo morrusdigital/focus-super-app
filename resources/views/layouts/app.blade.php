@@ -111,9 +111,46 @@
                             <i data-feather="file-text"></i><span>Daftar BP Saya</span>
                           </a>
                         </li>
+                        <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('projects.*') ? 'active' : '' }}"
+                             href="{{ route('projects.index') }}">
+                            <i data-feather="layers"></i><span>Projects</span>
+                          </a>
+                        </li>
+                        <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('bank-accounts.*') ? 'active' : '' }}"
+                             href="{{ route('bank-accounts.index') }}">
+                            <i data-feather="credit-card"></i><span>Rekening</span>
+                          </a>
+                        </li>
+                        <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title {{ request()->routeIs('budget-plan-categories.*', 'chart-accounts.*', 'tax-masters.*') ? 'active' : '' }}" href="#">
+                            <i data-feather="folder"></i><span>Master</span>
+                          </a>
+                          <ul class="sidebar-submenu">
+                            <li>
+                              <a href="{{ route('budget-plan-categories.index') }}"
+                                 class="{{ request()->routeIs('budget-plan-categories.*') ? 'active' : '' }}">Kategori BP</a>
+                            </li>
+                            <li>
+                              <a href="{{ route('chart-accounts.index') }}"
+                                 class="{{ request()->routeIs('chart-accounts.*') ? 'active' : '' }}">Akun</a>
+                            </li>
+                            <li>
+                              <a href="{{ route('tax-masters.index') }}"
+                                 class="{{ request()->routeIs('tax-masters.*') ? 'active' : '' }}">Pajak</a>
+                            </li>
+                          </ul>
+                        </li>
                       @endif
 
                       @if (auth()->user()?->isFinanceHolding())
+                        <li class="sidebar-list">
+                          <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('projects.*') ? 'active' : '' }}"
+                             href="{{ route('projects.index') }}">
+                            <i data-feather="layers"></i><span>Projects</span>
+                          </a>
+                        </li>
                         <li class="sidebar-list">
                           <a class="sidebar-link sidebar-title link-nav {{ request()->routeIs('budget-plans.index') && request('status') === 'submitted' ? 'active' : '' }}"
                              href="{{ route('budget-plans.index', ['status' => 'submitted']) }}">

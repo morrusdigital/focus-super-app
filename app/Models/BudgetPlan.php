@@ -35,7 +35,10 @@ class BudgetPlan extends Model
         'revision_requested_at',
         'total_amount',
         'notes',
-        'tanggal',
+        'submission_date',
+        'week_of_month',
+        'project_count',
+        'category',
     ];
 
     protected $casts = [
@@ -44,7 +47,9 @@ class BudgetPlan extends Model
         'rejected_at' => 'datetime',
         'revision_requested_at' => 'datetime',
         'total_amount' => 'decimal:2',
-        'tanggal' => 'date',
+        'submission_date' => 'date',
+        'week_of_month' => 'integer',
+        'project_count' => 'integer',
     ];
 
     public function company()

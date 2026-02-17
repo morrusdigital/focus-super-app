@@ -1,7 +1,14 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BudgetPlanCategoryController;
 use App\Http\Controllers\BudgetPlanController;
+use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\CompanyBankAccountController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectReceiptController;
+use App\Http\Controllers\ProjectTermController;
+use App\Http\Controllers\TaxMasterController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -12,6 +19,10 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('budget-plans/pdf', [BudgetPlanController::class, 'exportPdfIndex'])
+        ->name('budget-plans.pdf');
+    Route::get('budget-plans/{budget_plan}/pdf', [BudgetPlanController::class, 'exportPdf'])
+        ->name('budget-plans.pdf.show');
     Route::resource('budget-plans', BudgetPlanController::class);
     Route::post('budget-plans/{budget_plan}/submit', [BudgetPlanController::class, 'submit'])
         ->name('budget-plans.submit');
@@ -21,6 +32,24 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.reject');
     Route::post('budget-plans/{budget_plan}/request-revision', [BudgetPlanController::class, 'requestRevision'])
         ->name('budget-plans.request-revision');
+    Route::post('budget-plans/{budget_plan}/record-expense', [BudgetPlanController::class, 'recordExpense'])
+        ->name('budget-plans.record-expense');
+
+    Route::resource('projects', ProjectController::class);
+    Route::get('projects/{project}/terms', [ProjectTermController::class, 'index'])->name('projects.terms.index');
+    Route::post('projects/{project}/terms', [ProjectTermController::class, 'store'])->name('projects.terms.store');
+    Route::put('projects/{project}/terms/{term}', [ProjectTermController::class, 'update'])->name('projects.terms.update');
+    Route::delete('projects/{project}/terms/{term}', [ProjectTermController::class, 'destroy'])->name('projects.terms.destroy');
+    Route::post('projects/{project}/terms/{term}/mark-sent', [ProjectTermController::class, 'markSent'])->name('project-terms.mark-sent');
+
+    Route::get('projects/{project}/receipts', [ProjectReceiptController::class, 'index'])->name('projects.receipts.index');
+    Route::post('projects/{project}/receipts', [ProjectReceiptController::class, 'store'])->name('projects.receipts.store');
+    Route::delete('projects/{project}/receipts/{receipt}', [ProjectReceiptController::class, 'destroy'])->name('projects.receipts.destroy');
+
+    Route::resource('bank-accounts', CompanyBankAccountController::class);
+    Route::resource('budget-plan-categories', BudgetPlanCategoryController::class);
+    Route::resource('chart-accounts', ChartAccountController::class);
+    Route::resource('tax-masters', TaxMasterController::class);
 });
 
 Route::get('/', function () {

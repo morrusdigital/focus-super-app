@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BudgetPlan;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class BudgetPlanService
@@ -11,12 +12,15 @@ class BudgetPlanService
     {
         return DB::transaction(function () use ($data, $items, $actorId) {
             $bpNumber = $this->generateBpNumber();
-            [$preparedItems, $totalAmount] = $this->prepareItems($items);
+            [$preparedItems, $totalAmount, $projectCount] = $this->prepareItems($items);
+            $weekOfMonth = $this->calculateWeekOfMonth($data['submission_date'] ?? null);
 
             $budgetPlan = BudgetPlan::create([
                 ...$data,
                 'bp_number' => $bpNumber,
                 'total_amount' => $totalAmount,
+                'week_of_month' => $weekOfMonth,
+                'project_count' => $projectCount,
             ]);
 
             if ($preparedItems) {
@@ -35,11 +39,14 @@ class BudgetPlanService
     public function update(BudgetPlan $budgetPlan, array $data, array $items, int $actorId): BudgetPlan
     {
         return DB::transaction(function () use ($budgetPlan, $data, $items, $actorId) {
-            [$preparedItems, $totalAmount] = $this->prepareItems($items);
+            [$preparedItems, $totalAmount, $projectCount] = $this->prepareItems($items);
+            $weekOfMonth = $this->calculateWeekOfMonth($data['submission_date'] ?? $budgetPlan->submission_date);
 
             $budgetPlan->fill([
                 ...$data,
                 'total_amount' => $totalAmount,
+                'week_of_month' => $weekOfMonth,
+                'project_count' => $projectCount,
             ]);
             $budgetPlan->save();
 
@@ -76,25 +83,48 @@ class BudgetPlanService
     {
         $prepared = [];
         $totalAmount = 0.0;
+        $projectIds = [];
 
         foreach ($items as $item) {
-            $harsat = (float) ($item['harsat'] ?? 0);
-            $qty = (float) ($item['qty'] ?? 0);
-            $jumlah = round($harsat * $qty, 2);
+            $unitPrice = (float) ($item['unit_price'] ?? 0);
+            $quantity = (float) ($item['quantity'] ?? 0);
+            $lineTotal = round($unitPrice * $quantity, 2);
+            $projectId = $item['project_id'] ?: null;
 
             $prepared[] = [
+                'project_id' => $projectId,
+                'bank_account_id' => $item['bank_account_id'] ?: null,
+                'chart_account_id' => $item['chart_account_id'] ?: null,
                 'item_name' => $item['item_name'] ?? '',
-                'kode' => $item['kode'] ?? '',
-                'vendor_name' => $item['vendor_name'] ?? null,
-                'harsat' => $harsat,
-                'qty' => $qty,
-                'satuan' => $item['satuan'] ?? '',
-                'jumlah' => $jumlah,
+                'vendor_name' => $item['vendor_name'] ?: null,
+                'category' => $item['category'] ?: null,
+                'unit_price' => $unitPrice,
+                'quantity' => $quantity,
+                'unit' => $item['unit'] ?: 'unit',
+                'line_total' => $lineTotal,
+                'real_amount' => (float) ($item['real_amount'] ?? 0),
             ];
 
-            $totalAmount += $jumlah;
+            $totalAmount += $lineTotal;
+            if ($projectId) {
+                $projectIds[$projectId] = true;
+            }
         }
 
-        return [$prepared, round($totalAmount, 2)];
+        return [$prepared, round($totalAmount, 2), count($projectIds)];
+    }
+
+    private function calculateWeekOfMonth(null|string $date): ?int
+    {
+        if (! $date) {
+            return null;
+        }
+
+        $carbon = Carbon::parse($date);
+        $firstOfMonth = $carbon->copy()->startOfMonth();
+        $offset = $firstOfMonth->dayOfWeekIso - 1; // Monday = 1
+        $week = intdiv($offset + ($carbon->day - 1), 7) + 1;
+
+        return max(1, min(6, $week));
     }
 }

@@ -40,9 +40,12 @@
       <div class="card-header pb-0">
         <div class="d-flex align-items-center justify-content-between">
           <h5>Daftar Budget Plan</h5>
-          @can('create', App\Models\BudgetPlan::class)
-            <a class="btn btn-primary" href="{{ route('budget-plans.create') }}">Tambah BP</a>
-          @endcan
+          <div class="d-flex gap-2">
+            <a class="btn btn-light" href="{{ route('budget-plans.pdf', request()->query()) }}">Export PDF</a>
+            @can('create', App\Models\BudgetPlan::class)
+              <a class="btn btn-primary" href="{{ route('budget-plans.create') }}">Tambah BP</a>
+            @endcan
+          </div>
         </div>
       </div>
       <div class="card-body">
@@ -71,7 +74,7 @@
                 <th>Pemohon</th>
                 <th>Total</th>
                 <th>Status</th>
-                <th>Tanggal BP</th>
+                <th>Tanggal Pengajuan</th>
                 <th class="text-end">Aksi</th>
               </tr>
             </thead>
@@ -87,7 +90,7 @@
                       {{ $statusLabels[$bp->status] ?? $bp->status }}
                     </span>
                   </td>
-                  <td>{{ $bp->tanggal?->format('d/m/Y') ?? '-' }}</td>
+                  <td>{{ $bp->submission_date?->format('d/m/Y') ?? '-' }}</td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-light" href="{{ route('budget-plans.show', $bp) }}">Detail</a>
                     @can('update', $bp)

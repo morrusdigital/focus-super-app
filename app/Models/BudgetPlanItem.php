@@ -9,25 +9,53 @@ class BudgetPlanItem extends Model
 {
     use HasFactory;
 
+    public const CATEGORIES = [
+        'Gaji',
+        'Operasional',
+        'Marketing',
+        'Inventaris',
+        'Other',
+    ];
+
     protected $fillable = [
         'budget_plan_id',
+        'project_id',
+        'bank_account_id',
+        'chart_account_id',
         'item_name',
-        'kode',
         'vendor_name',
-        'harsat',
-        'qty',
-        'satuan',
-        'jumlah',
+        'category',
+        'unit_price',
+        'quantity',
+        'unit',
+        'line_total',
+        'real_amount',
     ];
 
     protected $casts = [
-        'harsat' => 'decimal:2',
-        'qty' => 'decimal:2',
-        'jumlah' => 'decimal:2',
+        'unit_price' => 'decimal:2',
+        'quantity' => 'decimal:2',
+        'line_total' => 'decimal:2',
+        'real_amount' => 'decimal:2',
     ];
 
     public function budgetPlan()
     {
         return $this->belongsTo(BudgetPlan::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(CompanyBankAccount::class, 'bank_account_id');
+    }
+
+    public function chartAccount()
+    {
+        return $this->belongsTo(ChartAccount::class);
     }
 }
