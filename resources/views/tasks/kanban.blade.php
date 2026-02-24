@@ -20,6 +20,13 @@
         </div>
     </div>
 
+    @if (session('status'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('status') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Kanban board --}}
     <div class="row flex-nowrap overflow-auto pb-3 kanban-board">
 
@@ -77,7 +84,7 @@
                                     </div>
 
                                     {{-- Footer: due date + assignees --}}
-                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-2">
                                         {{-- Due date --}}
                                         <small class="{{ $task->due_date && $task->due_date->isPast() && $statusValue !== 'done' ? 'text-danger fw-bold' : 'text-muted' }}">
                                             <i class="fa fa-calendar me-1"></i>
@@ -94,6 +101,53 @@
                                             @endforeach
                                         </div>
                                     </div>
+
+                                    {{-- ─── Move actions ──────────────────────────────── --}}
+                                    @can('update', $task)
+                                        <form method="post"
+                                              action="{{ route('tasks.move', $task) }}"
+                                              class="move-form">
+                                            @csrf
+                                            @method('patch')
+
+                                            <div class="d-flex gap-1 flex-wrap mb-1">
+                                                @foreach (\App\Enums\TaskStatus::cases() as $s)
+                                                    @if ($s->value !== $statusValue)
+                                                        <button type="submit"
+                                                                name="status"
+                                                                value="{{ $s->value }}"
+                                                                class="btn btn-xs btn-outline-{{ $columnConfig[$s->value]['color'] ?? 'secondary' }} move-btn"
+                                                                data-status="{{ $s->value }}">
+                                                            → {{ $s->label() }}
+                                                        </button>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+
+                                            {{-- Blocked reason (shown via JS when blocked is clicked; fallback always visible) --}}
+                                            <div class="blocked-reason-wrapper"
+                                                 id="br-{{ $task->id }}"
+                                                 style="display:none;">
+                                                <textarea class="form-control form-control-sm mt-1"
+                                                          name="blocked_reason"
+                                                          rows="2"
+                                                          placeholder="Alasan blocked (wajib)"></textarea>
+                                            </div>
+                                        </form>
+                                    @elsecan('markDone', $task)
+                                        @if ($statusValue !== 'done')
+                                            <form method="post"
+                                                  action="{{ route('tasks.move', $task) }}">
+                                                @csrf
+                                                @method('patch')
+                                                <input type="hidden" name="status" value="done">
+                                                <button type="submit"
+                                                        class="btn btn-xs btn-outline-success w-100">
+                                                    → Done
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
 
                                 </div>{{-- /card-body --}}
                             </div>{{-- /kanban-card --}}
@@ -114,14 +168,38 @@
 
 @push('styles')
 <style>
-    .kanban-board {
-        align-items: flex-start;
-    }
-    .kanban-card {
-        transition: box-shadow .15s ease;
-    }
-    .kanban-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,.15) !important;
+    .kanban-board { align-items: flex-start; }
+    .kanban-card  { transition: box-shadow .15s ease; }
+    .kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.15) !important; }
+    .btn-xs {
+        padding: .15rem .4rem;
+        font-size: .72rem;
+        line-height: 1.4;
+        border-radius: .2rem;
     }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Show blocked_reason textarea when user clicks → Blocked button.
+    document.querySelectorAll('.move-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            const form    = this.closest('.move-form');
+            const wrapper = form.querySelector('.blocked-reason-wrapper');
+            const ta      = wrapper.querySelector('textarea');
+            if (this.dataset.status === 'blocked') {
+                wrapper.style.display = '';
+                ta.required = true;
+                e.preventDefault(); // wait for user to fill reason, then re-click submit
+            } else {
+                wrapper.style.display = 'none';
+                ta.required = false;
+                ta.value    = '';
+            }
+        });
+    });
+});
+</script>
 @endpush
