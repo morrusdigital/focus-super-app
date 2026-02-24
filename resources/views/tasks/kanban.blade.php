@@ -27,6 +27,27 @@
         </div>
     @endif
 
+    {{-- Project progress summary --}}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="fw-semibold small">Progress Project</span>
+                <span class="fw-bold text-{{ $project->progress_percent === 100 ? 'success' : 'primary' }}">
+                    {{ $project->progress_percent }}%
+                </span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-{{ $project->progress_percent === 100 ? 'success' : 'primary' }}"
+                     role="progressbar"
+                     style="width: {{ $project->progress_percent }}%"
+                     aria-valuenow="{{ $project->progress_percent }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Kanban board --}}
     <div class="row flex-nowrap overflow-auto pb-3 kanban-board">
 

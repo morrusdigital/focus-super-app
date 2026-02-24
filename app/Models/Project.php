@@ -22,6 +22,7 @@ class Project extends Model
         'project_manager_id',
         'name',
         'address',
+        'progress_percent',
         'start_work_date',
         'contract_value',
         'use_pph',
@@ -34,6 +35,7 @@ class Project extends Model
     ];
 
     protected $casts = [
+        'progress_percent' => 'integer',
         'contract_value' => 'decimal:2',
         'start_work_date' => 'date',
         'use_pph' => 'boolean',
@@ -63,6 +65,22 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    /**
+     * Recalculate and persist project_progress_percent.
+     *
+     * Formula : (done_tasks / total_tasks) * 100
+     * Edge case: if no tasks exist, progress = 0.
+     */
+    public function recalculateProgress(): void
+    {
+        $total = $this->tasks()->count();
+        $done  = $this->tasks()->where('status', \App\Enums\TaskStatus::Done->value)->count();
+
+        $percent = $total > 0 ? (int) round(($done / $total) * 100) : 0;
+
+        $this->updateQuietly(['progress_percent' => $percent]);
     }
 
     public function pphTaxMaster()
