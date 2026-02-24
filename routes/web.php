@@ -9,6 +9,7 @@ use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMemberController;
 use App\Http\Controllers\ProjectReceiptController;
+use App\Http\Controllers\MyTaskController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProjectExpenseController;
 use App\Http\Controllers\ProjectProgressController;
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('projects', ProjectController::class);
     Route::post('projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
     Route::delete('projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
+
+    Route::get('tasks/my', [MyTaskController::class, 'my'])->name('tasks.my');
+    Route::get('tasks/overdue', [MyTaskController::class, 'overdue'])->name('tasks.overdue');
 
     Route::get('projects/{project}/tasks', [TaskController::class, 'index'])->name('projects.tasks.index');
     Route::get('projects/{project}/tasks/create', [TaskController::class, 'create'])->name('projects.tasks.create');
