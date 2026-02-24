@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -48,6 +49,11 @@ class User extends Authenticatable
         ];
     }
 
+    // ---------------------------------------------------------------
+    // Legacy helpers — kept intact so existing policies/controllers
+    // continue to work without modification.
+    // ---------------------------------------------------------------
+
     public function isFinanceHolding(): bool
     {
         return $this->role === 'finance_holding';
@@ -56,5 +62,43 @@ class User extends Authenticatable
     public function isAdminCompany(): bool
     {
         return $this->role === 'admin_company';
+    }
+
+    // ---------------------------------------------------------------
+    // New MVP role helpers — support both new role strings and the
+    // legacy equivalents via UserRole::fromString() compatibility map.
+    // Use these in new modules (Task, Kanban, etc.).
+    // ---------------------------------------------------------------
+
+    /**
+     * True for 'holding_admin' and legacy 'finance_holding'.
+     */
+    public function isHoldingAdmin(): bool
+    {
+        return UserRole::isHoldingAdmin((string) $this->role);
+    }
+
+    /**
+     * True for 'company_admin' and legacy 'admin_company'.
+     */
+    public function isCompanyAdmin(): bool
+    {
+        return UserRole::isCompanyAdmin((string) $this->role);
+    }
+
+    /**
+     * True for 'project_manager'.
+     */
+    public function isProjectManager(): bool
+    {
+        return UserRole::isProjectManager((string) $this->role);
+    }
+
+    /**
+     * True for 'member'.
+     */
+    public function isMember(): bool
+    {
+        return UserRole::isMember((string) $this->role);
     }
 }
