@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -100,5 +101,23 @@ class User extends Authenticatable
     public function isMember(): bool
     {
         return UserRole::isMember((string) $this->role);
+    }
+
+    // ---------------------------------------------------------------
+    // Task & project membership relations (Task #3)
+    // ---------------------------------------------------------------
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_members')
+                    ->using(ProjectMember::class)
+                    ->withTimestamps();
+    }
+
+    public function assignedTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_assignees')
+                    ->using(TaskAssignee::class)
+                    ->withTimestamps();
     }
 }
