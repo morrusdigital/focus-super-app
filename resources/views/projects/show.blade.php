@@ -171,6 +171,85 @@
             </div>
         </div>
 
+        {{-- --------------------------------------------------------- --}}
+        {{-- Member Project                                             --}}
+        {{-- --------------------------------------------------------- --}}
+        <div class="card">
+            <div class="card-header pb-0 d-flex align-items-center justify-content-between">
+                <h5>Member Project</h5>
+            </div>
+            <div class="card-body">
+                @can('manageMembers', $project)
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-3">Tambah Member</h6>
+                        <form method="post" action="{{ route('projects.members.store', $project) }}">
+                            @csrf
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label">Pilih User</label>
+                                    <select class="form-select" name="user_id" required>
+                                        <option value="">-- Pilih User --</option>
+                                        @foreach ($addableUsers as $u)
+                                            <option value="{{ $u->id }}"
+                                                {{ old('user_id') == $u->id ? 'selected' : '' }}>
+                                                {{ $u->name }} ({{ $u->role }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('user_id')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-auto">
+                                    <button class="btn btn-primary" type="submit">Tambah Member</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endcan
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Role</th>
+                                @can('manageMembers', $project)
+                                    <th style="width:100px">Aksi</th>
+                                @endcan
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($project->members as $member)
+                                <tr>
+                                    <td>{{ $member->name }}</td>
+                                    <td>{{ $member->role }}</td>
+                                    @can('manageMembers', $project)
+                                        <td>
+                                            <form method="post"
+                                                action="{{ route('projects.members.destroy', [$project, $member]) }}"
+                                                onsubmit="return confirm('Hapus member ini dari project?')">
+                                                @csrf
+                                                @method('delete')
+                                                <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                                            </form>
+                                        </td>
+                                    @endcan
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="{{ auth()->user()?->can('manageMembers', $project) ? 3 : 2 }}"
+                                        class="text-center">
+                                        Belum ada member.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header pb-0">
                 <ul class="nav nav-tabs card-header-tabs" id="project-finance-tab" role="tablist">
