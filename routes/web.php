@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::get('tasks/overdue', [MyTaskController::class, 'overdue'])->name('tasks.overdue');
 
     Route::get('projects/{project}/kanban', [KanbanController::class, 'show'])->name('projects.kanban');
+    Route::patch('tasks/{task}/move', [KanbanController::class, 'move'])->name('tasks.move');
 
     Route::get('projects/{project}/tasks', [TaskController::class, 'index'])->name('projects.tasks.index');
     Route::get('projects/{project}/tasks/create', [TaskController::class, 'create'])->name('projects.tasks.create');
