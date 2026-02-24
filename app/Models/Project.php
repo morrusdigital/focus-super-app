@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
@@ -16,6 +19,7 @@ class Project extends Model
 
     protected $fillable = [
         'company_id',
+        'project_manager_id',
         'name',
         'address',
         'start_work_date',
@@ -42,6 +46,23 @@ class Project extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function projectManager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'project_manager_id');
+    }
+
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_members')
+                    ->using(ProjectMember::class)
+                    ->withTimestamps();
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
     }
 
     public function pphTaxMaster()
