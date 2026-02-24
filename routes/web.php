@@ -9,6 +9,7 @@ use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMemberController;
 use App\Http\Controllers\ProjectReceiptController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProjectExpenseController;
 use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\ProjectRecapController;
@@ -50,6 +51,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('projects', ProjectController::class);
     Route::post('projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
     Route::delete('projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
+
+    Route::get('projects/{project}/tasks', [TaskController::class, 'index'])->name('projects.tasks.index');
+    Route::get('projects/{project}/tasks/create', [TaskController::class, 'create'])->name('projects.tasks.create');
+    Route::post('projects/{project}/tasks', [TaskController::class, 'store'])->name('projects.tasks.store');
+    Route::get('projects/{project}/tasks/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
+    Route::put('projects/{project}/tasks/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
+    Route::patch('projects/{project}/tasks/{task}/status', [TaskController::class, 'patchStatus'])->name('projects.tasks.status');
     Route::get('project-recaps', [ProjectRecapController::class, 'index'])->name('project-recaps.index');
     Route::get('projects/{project}/terms', [ProjectTermController::class, 'index'])->name('projects.terms.index');
     Route::post('projects/{project}/terms', [ProjectTermController::class, 'store'])->name('projects.terms.store');
