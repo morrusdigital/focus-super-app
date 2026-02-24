@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChartAccount;
 use App\Models\Project;
 use App\Models\TaxMaster;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -64,6 +65,7 @@ class ProjectController extends Controller
             'company',
             'pphTaxMaster',
             'ppnTaxMaster',
+            'members' => fn ($query) => $query->orderBy('name'),
             'terms' => fn ($query) => $query->orderBy('sequence_no'),
             'vendors' => fn ($query) => $query->orderBy('name'),
             'expenses' => fn ($query) => $query
@@ -104,10 +106,17 @@ class ProjectController extends Controller
             ->reverse()
             ->values();
 
+        $memberIds    = $project->members->pluck('id')->toArray();
+        $addableUsers = User::where('company_id', $project->company_id)
+            ->whereNotIn('id', $memberIds)
+            ->orderBy('name')
+            ->get();
+
         return view('projects.show', [
-            'project' => $project,
-            'chartAccounts' => $chartAccounts,
+            'project'         => $project,
+            'chartAccounts'   => $chartAccounts,
             'progressHistory' => $progressHistory,
+            'addableUsers'    => $addableUsers,
         ]);
     }
 

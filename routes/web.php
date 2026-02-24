@@ -7,6 +7,7 @@ use App\Http\Controllers\BudgetPlanRealizationController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\CompanyBankAccountController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectMemberController;
 use App\Http\Controllers\ProjectReceiptController;
 use App\Http\Controllers\ProjectExpenseController;
 use App\Http\Controllers\ProjectProgressController;
@@ -47,6 +48,8 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.realizations.destroy');
 
     Route::resource('projects', ProjectController::class);
+    Route::post('projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
+    Route::delete('projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
     Route::get('project-recaps', [ProjectRecapController::class, 'index'])->name('project-recaps.index');
     Route::get('projects/{project}/terms', [ProjectTermController::class, 'index'])->name('projects.terms.index');
     Route::post('projects/{project}/terms', [ProjectTermController::class, 'store'])->name('projects.terms.store');
