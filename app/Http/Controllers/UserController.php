@@ -24,11 +24,36 @@ class UserController extends Controller
 
         $users = User::query()
             ->with('company')
+            // ── Company scope ────────────────────────────────────────
+            // company_admin is hard-locked to their own company.
             ->when($actor->isCompanyAdmin(), fn ($q) => $q->where('company_id', $actor->company_id))
+            // holding_admin may additionally filter by a specific company.
+            ->when(
+                $actor->isHoldingAdmin() && $request->filled('company_id'),
+                fn ($q) => $q->where('company_id', $request->integer('company_id'))
+            )
+            // ── Filters ──────────────────────────────────────────────
+            ->when($request->filled('name'),
+                fn ($q) => $q->where('name', 'like', '%' . $request->get('name') . '%'))
+            ->when($request->filled('email'),
+                fn ($q) => $q->where('email', 'like', '%' . $request->get('email') . '%'))
+            ->when($request->filled('role'),
+                fn ($q) => $q->where('role', $request->get('role')))
+            ->when($request->input('is_active') !== null && $request->input('is_active') !== '',
+                fn ($q) => $q->where('is_active', (bool) $request->integer('is_active')))
+            // ── Stable sort + pagination ──────────────────────────────
             ->orderBy('name')
-            ->get();
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('users.index', compact('users'));
+        $companies = $actor->isHoldingAdmin()
+            ? Company::orderBy('name')->get()
+            : collect();
+
+        $roles = UserRole::cases();
+
+        return view('users.index', compact('users', 'companies', 'roles'));
     }
 
     // ---------------------------------------------------------------
@@ -44,7 +69,10 @@ class UserController extends Controller
             ? Company::orderBy('name')->get()
             : Company::where('id', $actor->company_id)->get();
 
-        $roles = UserRole::cases();
+        // Privilege escalation guard: company_admin may only assign company-level roles.
+        $roles = $actor->isHoldingAdmin()
+            ? UserRole::cases()
+            : [UserRole::CompanyAdmin, UserRole::FinanceCompany, UserRole::Employee];
 
         return view('users.create', compact('companies', 'roles'));
     }
@@ -99,7 +127,10 @@ class UserController extends Controller
             ? Company::orderBy('name')->get()
             : Company::where('id', $actor->company_id)->get();
 
-        $roles = UserRole::cases();
+        // Privilege escalation guard: same restriction as create.
+        $roles = $actor->isHoldingAdmin()
+            ? UserRole::cases()
+            : [UserRole::CompanyAdmin, UserRole::FinanceCompany, UserRole::Employee];
 
         return view('users.edit', compact('user', 'companies', 'roles'));
     }
