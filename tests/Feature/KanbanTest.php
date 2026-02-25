@@ -55,7 +55,7 @@ class KanbanTest extends TestCase
     public function project_manager_can_view_kanban_board(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $this->actingAs($manager)
@@ -80,7 +80,7 @@ class KanbanTest extends TestCase
     public function member_who_joined_project_can_view_kanban_board(): void
     {
         $company = $this->makeCompany();
-        $member  = $this->makeUser($company, 'member');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $project->members()->attach($member->id);
 
@@ -110,7 +110,7 @@ class KanbanTest extends TestCase
     public function member_without_project_access_gets_403(): void
     {
         $company = $this->makeCompany();
-        $member  = $this->makeUser($company, 'member');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         // NOT attached to the project
 
@@ -150,7 +150,7 @@ class KanbanTest extends TestCase
     public function tasks_are_grouped_by_status_correctly(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $this->makeTask($project, 'todo',    'Todo Task');
@@ -173,7 +173,7 @@ class KanbanTest extends TestCase
     public function each_status_column_shows_correct_count(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         // 2 todo, 1 doing, 0 blocked, 1 done
@@ -193,7 +193,7 @@ class KanbanTest extends TestCase
     public function board_shows_all_four_columns_even_when_empty(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         // No tasks at all
 
@@ -210,7 +210,7 @@ class KanbanTest extends TestCase
     public function task_in_wrong_project_does_not_appear_on_board(): void
     {
         $company  = $this->makeCompany();
-        $manager  = $this->makeUser($company, 'project_manager');
+        $manager  = $this->makeUser($company, 'employee');
         $projectA = $this->makeProject($company, $manager);
         $projectB = $this->makeProject($company, $manager);
 

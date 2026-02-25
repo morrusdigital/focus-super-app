@@ -208,7 +208,7 @@ class ProjectProgressTest extends TestCase
     public function kanban_view_shows_project_progress(): void
     {
         $company = $this->makeCompany();
-        $manager = User::factory()->create(['company_id' => $company->id, 'role' => 'project_manager']);
+        $manager = User::factory()->create(['company_id' => $company->id, 'role' => 'employee']);
         $project = Project::factory()->create([
             'company_id'         => $company->id,
             'project_manager_id' => $manager->id,

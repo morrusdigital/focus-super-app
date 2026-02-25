@@ -16,7 +16,7 @@ class ProjectController extends Controller
         $this->authorize('viewAny', Project::class);
 
         $projects = Project::query()
-            ->when($request->user()->isAdminCompany(), function ($query) use ($request) {
+            ->when($request->user()->isCompanyAdmin(), function ($query) use ($request) {
                 $query->where('company_id', $request->user()->company_id);
             })
             ->when($request->user()->isFinanceHolding(), function ($query) use ($request) {

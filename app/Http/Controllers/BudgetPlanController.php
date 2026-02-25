@@ -297,7 +297,7 @@ class BudgetPlanController extends Controller
             $query->where('status', $status);
         }
 
-        if ($user->isAdminCompany()) {
+        if ($user->isCompanyAdmin()) {
             $query->where('company_id', $user->company_id);
         } else {
             $holdingId = $this->getHoldingId($user);

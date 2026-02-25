@@ -47,7 +47,7 @@ class ProjectMemberManagementTest extends TestCase
     {
         $company = $this->makeCompany();
         $actor   = $this->makeUser($company, 'company_admin');
-        $target  = $this->makeUser($company, 'member');
+        $target  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $this->actingAs($actor)
@@ -64,8 +64,8 @@ class ProjectMemberManagementTest extends TestCase
     public function project_manager_can_add_member_to_own_project(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $target  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $target  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $this->actingAs($manager)
@@ -85,11 +85,11 @@ class ProjectMemberManagementTest extends TestCase
         $projectCompany = $this->makeCompany();
 
         $holdingAdmin = $this->makeUser($holdingCompany, 'holding_admin');
-        $target       = $this->makeUser($projectCompany, 'member');
+        $target       = $this->makeUser($projectCompany, 'employee');
         $project      = $this->makeProject($projectCompany);
 
         // Holding admin adds a user from yet another company into the project
-        $otherUser = $this->makeUser($holdingCompany, 'member');
+        $otherUser = $this->makeUser($holdingCompany, 'employee');
 
         $this->actingAs($holdingAdmin)
             ->post(route('projects.members.store', $project), ['user_id' => $otherUser->id])
@@ -110,7 +110,7 @@ class ProjectMemberManagementTest extends TestCase
     {
         $company = $this->makeCompany();
         $actor   = $this->makeUser($company, 'company_admin');
-        $target  = $this->makeUser($company, 'member');
+        $target  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         // First add succeeds
@@ -135,7 +135,7 @@ class ProjectMemberManagementTest extends TestCase
         $otherCompany = $this->makeCompany();
 
         $actor       = $this->makeUser($company, 'company_admin');
-        $foreignUser = $this->makeUser($otherCompany, 'member');
+        $foreignUser = $this->makeUser($otherCompany, 'employee');
         $project     = $this->makeProject($company);
 
         $this->actingAs($actor)
@@ -156,8 +156,8 @@ class ProjectMemberManagementTest extends TestCase
     public function member_role_cannot_add_member(): void
     {
         $company = $this->makeCompany();
-        $actor   = $this->makeUser($company, 'member');
-        $target  = $this->makeUser($company, 'member');
+        $actor   = $this->makeUser($company, 'employee');
+        $target  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $this->actingAs($actor)
@@ -169,11 +169,11 @@ class ProjectMemberManagementTest extends TestCase
     public function project_manager_cannot_add_member_to_unmanaged_project(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $target  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $target  = $this->makeUser($company, 'employee');
 
         // Project has a different manager
-        $otherManager = $this->makeUser($company, 'project_manager');
+        $otherManager = $this->makeUser($company, 'employee');
         $project      = $this->makeProject($company, $otherManager);
 
         $this->actingAs($manager)
@@ -188,7 +188,7 @@ class ProjectMemberManagementTest extends TestCase
         $otherCompany = $this->makeCompany();
 
         $actor   = $this->makeUser($company, 'company_admin');
-        $target  = $this->makeUser($otherCompany, 'member');
+        $target  = $this->makeUser($otherCompany, 'employee');
         $project = $this->makeProject($otherCompany);
 
         $this->actingAs($actor)
@@ -205,7 +205,7 @@ class ProjectMemberManagementTest extends TestCase
     {
         $company = $this->makeCompany();
         $actor   = $this->makeUser($company, 'company_admin');
-        $member  = $this->makeUser($company, 'member');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $project->members()->attach($member->id);
@@ -224,8 +224,8 @@ class ProjectMemberManagementTest extends TestCase
     public function project_manager_can_remove_member_from_own_project(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $member  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $project->members()->attach($member->id);
@@ -247,7 +247,7 @@ class ProjectMemberManagementTest extends TestCase
         $projectCompany = $this->makeCompany();
 
         $holdingAdmin = $this->makeUser($holdingCompany, 'holding_admin');
-        $member       = $this->makeUser($projectCompany, 'member');
+        $member       = $this->makeUser($projectCompany, 'employee');
         $project      = $this->makeProject($projectCompany);
 
         $project->members()->attach($member->id);
@@ -270,8 +270,8 @@ class ProjectMemberManagementTest extends TestCase
     public function member_role_cannot_remove_member(): void
     {
         $company = $this->makeCompany();
-        $actor   = $this->makeUser($company, 'member');
-        $target  = $this->makeUser($company, 'member');
+        $actor   = $this->makeUser($company, 'employee');
+        $target  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $project->members()->attach($target->id);
@@ -288,7 +288,7 @@ class ProjectMemberManagementTest extends TestCase
         $otherCompany = $this->makeCompany();
 
         $actor   = $this->makeUser($company, 'company_admin');
-        $member  = $this->makeUser($otherCompany, 'member');
+        $member  = $this->makeUser($otherCompany, 'employee');
         $project = $this->makeProject($otherCompany);
 
         $project->members()->attach($member->id);

@@ -97,7 +97,7 @@ class TaskPolicyTest extends TestCase
     public function project_manager_can_view_task_in_own_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
         $task    = $this->makeTask($company, $project);
 
@@ -108,7 +108,7 @@ class TaskPolicyTest extends TestCase
     public function project_manager_cannot_view_task_in_unmanaged_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company); // no manager
         $task    = $this->makeTask($company, $project);
 
@@ -119,7 +119,7 @@ class TaskPolicyTest extends TestCase
     public function member_can_view_task_in_joined_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
         $project->members()->attach($user->id);
@@ -131,7 +131,7 @@ class TaskPolicyTest extends TestCase
     public function member_cannot_view_task_in_unjoined_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
@@ -181,7 +181,7 @@ class TaskPolicyTest extends TestCase
     public function project_manager_can_update_task_in_own_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
         $task    = $this->makeTask($company, $project);
 
@@ -192,7 +192,7 @@ class TaskPolicyTest extends TestCase
     public function project_manager_cannot_update_task_in_unmanaged_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
@@ -203,7 +203,7 @@ class TaskPolicyTest extends TestCase
     public function member_cannot_update_task(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
         $project->members()->attach($user->id);
@@ -254,7 +254,7 @@ class TaskPolicyTest extends TestCase
     public function project_manager_can_mark_done_task_in_own_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
         $task    = $this->makeTask($company, $project);
 
@@ -265,7 +265,7 @@ class TaskPolicyTest extends TestCase
     public function member_who_is_assignee_can_mark_done(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
@@ -279,7 +279,7 @@ class TaskPolicyTest extends TestCase
     public function member_who_is_not_assignee_cannot_mark_done(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
@@ -293,7 +293,7 @@ class TaskPolicyTest extends TestCase
     public function member_who_is_not_project_member_cannot_mark_done(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 

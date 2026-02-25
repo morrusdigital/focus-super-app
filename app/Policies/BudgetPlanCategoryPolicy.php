@@ -9,17 +9,17 @@ class BudgetPlanCategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function view(User $user, BudgetPlanCategory $category): bool
     {
-        return $user->isAdminCompany() && $category->company_id === $user->company_id;
+        return $user->isCompanyAdmin() && $category->company_id === $user->company_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function update(User $user, BudgetPlanCategory $category): bool

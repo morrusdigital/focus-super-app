@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'password',
         'company_id',
         'role',
+        'is_active',
     ];
 
     /**
@@ -46,61 +48,48 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
     }
 
     // ---------------------------------------------------------------
-    // Legacy helpers — kept intact so existing policies/controllers
-    // continue to work without modification.
+    // Final role helpers — use these in all new modules.
+    // PM / member status is determined by the project model, not roles.
     // ---------------------------------------------------------------
 
-    public function isFinanceHolding(): bool
-    {
-        return $this->role === 'finance_holding';
-    }
-
-    public function isAdminCompany(): bool
-    {
-        return $this->role === 'admin_company';
-    }
-
-    // ---------------------------------------------------------------
-    // New MVP role helpers — support both new role strings and the
-    // legacy equivalents via UserRole::fromString() compatibility map.
-    // Use these in new modules (Task, Kanban, etc.).
-    // ---------------------------------------------------------------
-
-    /**
-     * True for 'holding_admin' and legacy 'finance_holding'.
-     */
     public function isHoldingAdmin(): bool
     {
         return UserRole::isHoldingAdmin((string) $this->role);
     }
 
-    /**
-     * True for 'company_admin' and legacy 'admin_company'.
-     */
     public function isCompanyAdmin(): bool
     {
         return UserRole::isCompanyAdmin((string) $this->role);
     }
 
-    /**
-     * True for 'project_manager'.
-     */
-    public function isProjectManager(): bool
+    public function isFinanceHolding(): bool
     {
-        return UserRole::isProjectManager((string) $this->role);
+        return UserRole::isFinanceHolding((string) $this->role);
     }
 
-    /**
-     * True for 'member'.
-     */
-    public function isMember(): bool
+    public function isFinanceCompany(): bool
     {
-        return UserRole::isMember((string) $this->role);
+        return UserRole::isFinanceCompany((string) $this->role);
+    }
+
+    public function isEmployee(): bool
+    {
+        return UserRole::isEmployee((string) $this->role);
+    }
+
+    // ---------------------------------------------------------------
+    // Company relationship
+    // ---------------------------------------------------------------
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     // ---------------------------------------------------------------

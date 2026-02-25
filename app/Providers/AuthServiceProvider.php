@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\BudgetPlanCategory;
 use App\Models\Task;
 use App\Models\TaxMaster;
+use App\Models\User;
 use App\Policies\BudgetPlanPolicy;
 use App\Policies\BudgetPlanCategoryPolicy;
 use App\Policies\ChartAccountPolicy;
@@ -16,6 +17,7 @@ use App\Policies\CompanyBankAccountPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
 use App\Policies\TaxMasterPolicy;
+use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -33,6 +35,7 @@ class AuthServiceProvider extends ServiceProvider
         Task::class => TaskPolicy::class,
         CompanyBankAccount::class => CompanyBankAccountPolicy::class,
         TaxMaster::class => TaxMasterPolicy::class,
+        User::class => UserPolicy::class,
     ];
 
     /**

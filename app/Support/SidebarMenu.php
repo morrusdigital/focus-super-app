@@ -28,20 +28,19 @@ class SidebarMenu
      */
     public static function forUser(User $user): array
     {
-        // Priority order: holding > company_admin > project_manager > member
+        // Holding-level roles
         if ($user->isHoldingAdmin() || $user->isFinanceHolding()) {
-            return static::holdingMenu();
+            return static::holdingMenu($user);
         }
 
-        if ($user->isCompanyAdmin() || $user->isAdminCompany()) {
-            return static::companyAdminMenu();
+        // Company-level admin / finance roles
+        if ($user->isCompanyAdmin() || $user->isFinanceCompany()) {
+            return static::companyAdminMenu($user);
         }
 
-        if ($user->isProjectManager()) {
-            return static::projectManagerMenu();
-        }
-
-        if ($user->isMember()) {
+        // Employee: PM / member status is determined by the project model.
+        // Show member menu so employees see My Tasks + Overdue Tasks.
+        if ($user->isEmployee()) {
             return static::memberMenu();
         }
 
@@ -52,9 +51,9 @@ class SidebarMenu
     // Per-role menus
     // ---------------------------------------------------------------
 
-    private static function holdingMenu(): array
+    private static function holdingMenu(User $user): array
     {
-        return [
+        $items = [
             [
                 'type'   => 'link',
                 'label'  => 'Projects',
@@ -69,6 +68,19 @@ class SidebarMenu
                 'icon'   => 'bar-chart-2',
                 'active' => 'project-recaps.*',
             ],
+        ];
+
+        if ($user->isHoldingAdmin()) {
+            $items[] = [
+                'type'   => 'link',
+                'label'  => 'Manajemen User',
+                'route'  => 'users.index',
+                'icon'   => 'users',
+                'active' => 'users.*',
+            ];
+        }
+
+        $items = array_merge($items, [
             [
                 'type'       => 'link',
                 'label'      => 'Review BP',
@@ -86,12 +98,14 @@ class SidebarMenu
                 // active only when NOT the submitted filter
                 'active_url_exclude' => route('budget-plans.index', ['status' => 'submitted']),
             ],
-        ];
+        ]);
+
+        return $items;
     }
 
-    private static function companyAdminMenu(): array
+    private static function companyAdminMenu(User $user): array
     {
-        return [
+        $items = [
             [
                 'type'   => 'link',
                 'label'  => 'Ajukan BP',
@@ -120,6 +134,19 @@ class SidebarMenu
                 'icon'   => 'bar-chart-2',
                 'active' => 'project-recaps.*',
             ],
+        ];
+
+        if ($user->isCompanyAdmin()) {
+            $items[] = [
+                'type'   => 'link',
+                'label'  => 'Manajemen User',
+                'route'  => 'users.index',
+                'icon'   => 'users',
+                'active' => 'users.*',
+            ];
+        }
+
+        $items = array_merge($items, [
             [
                 'type'   => 'link',
                 'label'  => 'Rekening',
@@ -150,7 +177,9 @@ class SidebarMenu
                     ],
                 ],
             ],
-        ];
+        ]);
+
+        return $items;
     }
 
     private static function projectManagerMenu(): array

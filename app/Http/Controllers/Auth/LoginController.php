@@ -23,6 +23,17 @@ class LoginController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            // Block inactive users immediately after credential check.
+            if (! Auth::user()->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()
+                    ->withErrors(['email' => 'Akun Anda telah dinonaktifkan. Silakan hubungi administrator.'])
+                    ->onlyInput('email');
+            }
+
             $request->session()->regenerate();
 
             return redirect()->intended('/');

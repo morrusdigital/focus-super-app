@@ -55,7 +55,7 @@ class KanbanMoveTest extends TestCase
     public function move_doing_to_done_sets_progress_100(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $this->makeTask($project, 'doing', 50);
 
@@ -78,7 +78,7 @@ class KanbanMoveTest extends TestCase
     public function move_to_blocked_without_reason_is_rejected(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $this->makeTask($project, 'doing');
 
@@ -101,8 +101,8 @@ class KanbanMoveTest extends TestCase
     public function member_not_assignee_cannot_move_task(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $member  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $project->members()->attach($member->id);
@@ -120,8 +120,8 @@ class KanbanMoveTest extends TestCase
         $companyA = $this->makeCompany();
         $companyB = $this->makeCompany();
 
-        $managerA = $this->makeUser($companyA, 'project_manager');
-        $managerB = $this->makeUser($companyB, 'project_manager');
+        $managerA = $this->makeUser($companyA, 'employee');
+        $managerB = $this->makeUser($companyB, 'employee');
 
         $projectA = $this->makeProject($companyA, $managerA);
         $projectB = $this->makeProject($companyB, $managerB);
@@ -153,7 +153,7 @@ class KanbanMoveTest extends TestCase
     public function move_to_blocked_with_reason_is_accepted(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $this->makeTask($project, 'doing');
 
@@ -179,7 +179,7 @@ class KanbanMoveTest extends TestCase
     public function move_away_from_blocked_clears_reason(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $project->tasks()->create([
             'company_id'     => $company->id,
@@ -208,7 +208,7 @@ class KanbanMoveTest extends TestCase
     public function project_manager_can_reopen_task_from_done_to_todo(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $this->makeTask($project, 'done', 100);
 
@@ -230,8 +230,8 @@ class KanbanMoveTest extends TestCase
     public function assignee_member_can_move_task_to_done(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $member  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $project->members()->attach($member->id);
@@ -253,8 +253,8 @@ class KanbanMoveTest extends TestCase
     public function assignee_member_cannot_move_task_to_blocked(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $member  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $project->members()->attach($member->id);
@@ -278,7 +278,7 @@ class KanbanMoveTest extends TestCase
     public function invalid_status_value_is_rejected(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
         $task    = $this->makeTask($project, 'doing');
 

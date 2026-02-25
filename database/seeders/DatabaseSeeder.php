@@ -37,10 +37,20 @@ class DatabaseSeeder extends Seeder
         }
 
         DB::table('users')->insert([
-            'name' => 'Finance Holding',
-            'email' => 'finance.holding@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'finance_holding',
+            'name'       => 'Holding Admin',
+            'email'      => 'holding.admin@example.com',
+            'password'   => Hash::make('password'),
+            'role'       => 'holding_admin',
+            'company_id' => $holdingId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('users')->insert([
+            'name'       => 'Finance Holding',
+            'email'      => 'finance.holding@example.com',
+            'password'   => Hash::make('password'),
+            'role'       => 'finance_holding',
             'company_id' => $holdingId,
             'created_at' => $now,
             'updated_at' => $now,
@@ -50,10 +60,30 @@ class DatabaseSeeder extends Seeder
             $number = $index + 1;
 
             DB::table('users')->insert([
-                'name' => "Admin Company {$number}",
-                'email' => "admin.company{$number}@example.com",
-                'password' => Hash::make('password'),
-                'role' => 'admin_company',
+                'name'       => "Company Admin {$number}",
+                'email'      => "company.admin{$number}@example.com",
+                'password'   => Hash::make('password'),
+                'role'       => 'company_admin',
+                'company_id' => $companyId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('users')->insert([
+                'name'       => "Finance Company {$number}",
+                'email'      => "finance.company{$number}@example.com",
+                'password'   => Hash::make('password'),
+                'role'       => 'finance_company',
+                'company_id' => $companyId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('users')->insert([
+                'name'       => "Employee {$number}",
+                'email'      => "employee{$number}@example.com",
+                'password'   => Hash::make('password'),
+                'role'       => 'employee',
                 'company_id' => $companyId,
                 'created_at' => $now,
                 'updated_at' => $now,
