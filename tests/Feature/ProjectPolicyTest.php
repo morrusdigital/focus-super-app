@@ -196,13 +196,14 @@ class ProjectPolicyTest extends TestCase
     }
 
     #[Test]
-    public function project_manager_can_update_own_project(): void
+    public function project_manager_cannot_update_project(): void
     {
         $company = $this->makeCompany();
         $user    = $this->makeUser($company, 'project_manager');
         $project = $this->makeProject($company, $user);
 
-        $this->assertTrue($user->can('update', $project));
+        // PM manages tasks, but cannot edit the project record itself.
+        $this->assertFalse($user->can('update', $project));
     }
 
     #[Test]

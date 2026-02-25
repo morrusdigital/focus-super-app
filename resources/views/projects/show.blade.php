@@ -23,6 +23,14 @@
             <div class="card-header pb-0 d-flex align-items-center justify-content-between">
                 <h5>{{ $project->name }}</h5>
                 <div class="d-flex gap-2">
+                    @can('viewKanban', $project)
+                        <a class="btn btn-secondary" href="{{ route('projects.tasks.index', $project) }}">
+                            <i data-feather="check-square" style="width:15px;height:15px;"></i> Tasks
+                        </a>
+                        <a class="btn btn-info" href="{{ route('projects.kanban', $project) }}">
+                            <i data-feather="trello" style="width:15px;height:15px;"></i> Kanban
+                        </a>
+                    @endcan
                     @can('update', $project)
                         <a class="btn btn-primary" href="{{ route('projects.edit', $project) }}">Edit</a>
                     @endcan

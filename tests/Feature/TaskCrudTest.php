@@ -84,22 +84,17 @@ class TaskCrudTest extends TestCase
     }
 
     #[Test]
-    public function company_admin_can_create_task(): void
+    public function company_admin_cannot_create_task(): void
     {
         $company = $this->makeCompany();
         $admin   = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
         $member  = $this->addMember($project, $this->makeUser($company, 'member'));
 
+        // company_admin manages projects only, not tasks
         $this->actingAs($admin)
             ->post(route('projects.tasks.store', $project), $this->validPayload($member))
-            ->assertRedirect(route('projects.tasks.index', $project));
-
-        $task = Task::where('project_id', $project->id)->firstOrFail();
-        $this->assertDatabaseHas('task_assignees', [
-            'task_id' => $task->id,
-            'user_id' => $member->id,
-        ]);
+            ->assertForbidden();
     }
 
     #[Test]
