@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'password',
         'company_id',
         'role',
+        'is_active',
     ];
 
     /**
@@ -46,7 +48,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
     }
 
@@ -78,6 +81,15 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return UserRole::isEmployee((string) $this->role);
+    }
+
+    // ---------------------------------------------------------------
+    // Company relationship
+    // ---------------------------------------------------------------
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     // ---------------------------------------------------------------

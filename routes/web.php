@@ -18,6 +18,7 @@ use App\Http\Controllers\ProjectRecapController;
 use App\Http\Controllers\ProjectTermController;
 use App\Http\Controllers\ProjectVendorController;
 use App\Http\Controllers\TaxMasterController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -94,6 +95,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('budget-plan-categories', BudgetPlanCategoryController::class);
     Route::resource('chart-accounts', ChartAccountController::class);
     Route::resource('tax-masters', TaxMasterController::class);
+
+    Route::resource('users', UserController::class);
+    Route::post('users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 Route::get('/', function () {
