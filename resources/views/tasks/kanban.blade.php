@@ -49,7 +49,8 @@
     </div>
 
     {{-- Kanban board --}}
-    <div class="row flex-nowrap overflow-auto pb-3 kanban-board">
+    <div class="card">
+    <div class="card-body kanban-grid">
 
         @php
             $columnConfig = [
@@ -62,7 +63,7 @@
 
         @foreach ($columns as $statusValue => $column)
             @php $cfg = $columnConfig[$statusValue] ?? ['color' => 'secondary', 'header_bg' => '#6c757d']; @endphp
-            <div class="col-12 col-md-6 col-xl-3" style="min-width: 280px;">
+            <div class="kanban-col">
                 <div class="card h-100 shadow-sm">
                     {{-- Column header --}}
                     <div class="card-header text-white py-2"
@@ -74,8 +75,7 @@
                     </div>
 
                     {{-- Task cards --}}
-                    <div class="card-body p-2 d-flex flex-column gap-2"
-                         style="overflow-y: auto; max-height: 70vh;">
+                    <div class="card-body p-2 d-flex flex-column gap-2 kanban-col-body">
 
                         @forelse ($column['tasks'] as $task)
                             <div class="card border shadow-none kanban-card">
@@ -180,16 +180,35 @@
 
                     </div>{{-- /card-body (column) --}}
                 </div>{{-- /card (column) --}}
-            </div>{{-- /col --}}
+            </div>{{-- /kanban-col --}}
         @endforeach
 
-    </div>{{-- /kanban-board --}}
+    </div>{{-- /card-body (kanban grid) --}}
+    </div>{{-- /card --}}
 </div>
 @endsection
 
 @push('styles')
 <style>
-    .kanban-board { align-items: flex-start; }
+    /* Kanban grid — 4 cols desktop, 2 tablet, 1 mobile */
+    .kanban-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        align-items: start;
+    }
+    .kanban-col { min-width: 0; }
+    @media (max-width: 991px) {
+        .kanban-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 575px) {
+        .kanban-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .kanban-col-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 320px);
+        min-height: 120px;
+    }
     .kanban-card  { transition: box-shadow .15s ease; }
     .kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.15) !important; }
     .btn-xs {
