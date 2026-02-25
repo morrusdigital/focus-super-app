@@ -79,7 +79,7 @@
         <h5>Daftar User <span class="text-muted fs-6 fw-normal">({{ $users->total() }} total)</span></h5>
         @can('create', App\Models\User::class)
           <a class="btn btn-primary" href="{{ route('users.create') }}">Tambah User</a>
-        @endcan
+        @endcan 
       </div>
       <div class="card-body">
         @if (session('success'))
