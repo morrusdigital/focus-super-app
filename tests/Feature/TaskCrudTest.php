@@ -67,9 +67,9 @@ class TaskCrudTest extends TestCase
     public function project_manager_can_create_task(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), $this->validPayload($member))
@@ -89,7 +89,7 @@ class TaskCrudTest extends TestCase
         $company = $this->makeCompany();
         $admin   = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         // company_admin manages projects only, not tasks
         $this->actingAs($admin)
@@ -101,7 +101,7 @@ class TaskCrudTest extends TestCase
     public function member_role_cannot_create_task(): void
     {
         $company = $this->makeCompany();
-        $actor   = $this->makeUser($company, 'member');
+        $actor   = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $member  = $this->addMember($project, $actor);
 
@@ -118,10 +118,10 @@ class TaskCrudTest extends TestCase
     public function multi_assignee_is_saved_correctly(): void
     {
         $company  = $this->makeCompany();
-        $manager  = $this->makeUser($company, 'project_manager');
+        $manager  = $this->makeUser($company, 'employee');
         $project  = $this->makeProject($company, $manager);
-        $member1  = $this->addMember($project, $this->makeUser($company, 'member'));
-        $member2  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member1  = $this->addMember($project, $this->makeUser($company, 'employee'));
+        $member2  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), [
@@ -146,9 +146,9 @@ class TaskCrudTest extends TestCase
     public function blocked_status_without_reason_is_rejected(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), [
@@ -165,9 +165,9 @@ class TaskCrudTest extends TestCase
     public function blocked_status_with_reason_is_accepted(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), [
@@ -194,9 +194,9 @@ class TaskCrudTest extends TestCase
     public function progress_100_auto_sets_status_done(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), [
@@ -222,9 +222,9 @@ class TaskCrudTest extends TestCase
     public function status_done_auto_sets_progress_100(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $this->actingAs($manager)
             ->post(route('projects.tasks.store', $project), [
@@ -250,9 +250,9 @@ class TaskCrudTest extends TestCase
     public function project_manager_can_update_task(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $task = $project->tasks()->create([
             'company_id' => $company->id,
@@ -283,10 +283,10 @@ class TaskCrudTest extends TestCase
     public function update_syncs_assignees_correctly(): void
     {
         $company  = $this->makeCompany();
-        $manager  = $this->makeUser($company, 'project_manager');
+        $manager  = $this->makeUser($company, 'employee');
         $project  = $this->makeProject($company, $manager);
-        $member1  = $this->addMember($project, $this->makeUser($company, 'member'));
-        $member2  = $this->addMember($project, $this->makeUser($company, 'member'));
+        $member1  = $this->addMember($project, $this->makeUser($company, 'employee'));
+        $member2  = $this->addMember($project, $this->makeUser($company, 'employee'));
 
         $task = $project->tasks()->create([
             'company_id' => $company->id,
@@ -318,7 +318,7 @@ class TaskCrudTest extends TestCase
     public function patch_status_blocked_without_reason_is_rejected(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $task = $project->tasks()->create([
@@ -341,7 +341,7 @@ class TaskCrudTest extends TestCase
     public function patch_status_sets_progress_100_when_done(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $task = $project->tasks()->create([
@@ -369,8 +369,8 @@ class TaskCrudTest extends TestCase
     public function assignee_member_can_patch_status_to_done(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
-        $member  = $this->makeUser($company, 'member');
+        $manager = $this->makeUser($company, 'employee');
+        $member  = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $project->members()->attach($member->id);

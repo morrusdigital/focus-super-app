@@ -59,31 +59,28 @@ class MyTaskController extends Controller
     // ---------------------------------------------------------------
     // Private: apply role-based company isolation to a Task query.
     //
-    //   holding_admin  → all tasks (no filter)
-    //   company_admin  → tasks in own company
-    //   project_manager → tasks in projects they manage
-    //   member         → tasks in projects they have joined
+    //   holding_admin / finance_holding → all tasks (no filter)
+    //   company_admin / finance_company → tasks in own company
+    //   employee → tasks in projects they manage (PM) or are a member of
     // ---------------------------------------------------------------
 
     private function applyIsolation(\Illuminate\Database\Eloquent\Builder $query, $user): void
     {
-        if ($user->isHoldingAdmin()) {
+        if ($user->isHoldingAdmin() || $user->isFinanceHolding()) {
             // No extra restriction.
             return;
         }
 
-        if ($user->isCompanyAdmin()) {
+        if ($user->isCompanyAdmin() || $user->isFinanceCompany()) {
             $query->where('tasks.company_id', $user->company_id);
             return;
         }
 
-        if ($user->isProjectManager()) {
-            $query->whereHas('project', fn ($q) => $q->where('project_manager_id', $user->id));
-            return;
-        }
-
-        if ($user->isMember()) {
-            $query->whereHas('project.members', fn ($q) => $q->where('users.id', $user->id));
+        if ($user->isEmployee()) {
+            $query->where(function ($q) use ($user) {
+                $q->whereHas('project', fn ($p) => $p->where('project_manager_id', $user->id))
+                  ->orWhereHas('project.members', fn ($m) => $m->where('users.id', $user->id));
+            });
             return;
         }
 

@@ -10,12 +10,12 @@ class BudgetPlanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdminCompany() || $this->isFinanceHolding($user) !== null;
+        return $user->isCompanyAdmin() || $this->isFinanceHolding($user) !== null;
     }
 
     public function view(User $user, BudgetPlan $budgetPlan): bool
     {
-        if ($user->isAdminCompany()) {
+        if ($user->isCompanyAdmin()) {
             return $budgetPlan->company_id === $user->company_id;
         }
 
@@ -29,12 +29,12 @@ class BudgetPlanPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function update(User $user, BudgetPlan $budgetPlan): bool
     {
-        if (! $user->isAdminCompany()) {
+        if (! $user->isCompanyAdmin()) {
             return false;
         }
 
@@ -55,7 +55,7 @@ class BudgetPlanPolicy
 
     public function submit(User $user, BudgetPlan $budgetPlan): bool
     {
-        if (! $user->isAdminCompany()) {
+        if (! $user->isCompanyAdmin()) {
             return false;
         }
 
@@ -86,7 +86,7 @@ class BudgetPlanPolicy
 
     public function manageRealization(User $user, BudgetPlan $budgetPlan): bool
     {
-        if (! $user->isAdminCompany()) {
+        if (! $user->isCompanyAdmin()) {
             return false;
         }
 

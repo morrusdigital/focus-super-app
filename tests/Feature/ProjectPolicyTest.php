@@ -59,14 +59,14 @@ class ProjectPolicyTest extends TestCase
     #[Test]
     public function project_manager_can_view_any(): void
     {
-        $user = $this->makeUser($this->makeCompany(), 'project_manager');
+        $user = $this->makeUser($this->makeCompany(), 'employee');
         $this->assertTrue($user->can('viewAny', Project::class));
     }
 
     #[Test]
     public function member_can_view_any(): void
     {
-        $user = $this->makeUser($this->makeCompany(), 'member');
+        $user = $this->makeUser($this->makeCompany(), 'employee');
         $this->assertTrue($user->can('viewAny', Project::class));
     }
 
@@ -110,7 +110,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_can_view_project_they_manage(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
 
         $this->assertTrue($user->can('view', $project));
@@ -120,7 +120,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_can_view_project_they_are_member_of(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $project->members()->attach($user->id);
 
@@ -132,7 +132,7 @@ class ProjectPolicyTest extends TestCase
     {
         $company = $this->makeCompany();
         $other   = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($other);
 
         $this->assertFalse($user->can('view', $project));
@@ -142,7 +142,7 @@ class ProjectPolicyTest extends TestCase
     public function member_can_view_project_they_have_joined(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $project->members()->attach($user->id);
 
@@ -153,7 +153,7 @@ class ProjectPolicyTest extends TestCase
     public function member_cannot_view_project_they_have_not_joined(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $this->assertFalse($user->can('view', $project));
@@ -199,7 +199,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_cannot_update_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
 
         // PM manages tasks, but cannot edit the project record itself.
@@ -210,7 +210,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_cannot_update_project_they_do_not_manage(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);  // no project_manager_id set
 
         $this->assertFalse($user->can('update', $project));
@@ -220,7 +220,7 @@ class ProjectPolicyTest extends TestCase
     public function member_cannot_update_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $project->members()->attach($user->id);
 
@@ -267,7 +267,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_can_manage_members_of_own_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $user);
 
         $this->assertTrue($user->can('manageMembers', $project));
@@ -277,7 +277,7 @@ class ProjectPolicyTest extends TestCase
     public function project_manager_cannot_manage_members_of_unmanaged_project(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'project_manager');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
 
         $this->assertFalse($user->can('manageMembers', $project));
@@ -287,7 +287,7 @@ class ProjectPolicyTest extends TestCase
     public function member_cannot_manage_members(): void
     {
         $company = $this->makeCompany();
-        $user    = $this->makeUser($company, 'member');
+        $user    = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company);
         $project->members()->attach($user->id);
 

@@ -63,9 +63,9 @@ class MyTaskTest extends TestCase
     public function my_tasks_shows_only_tasks_assigned_to_current_user(): void
     {
         $company  = $this->makeCompany();
-        $manager  = $this->makeUser($company, 'project_manager');
+        $manager  = $this->makeUser($company, 'employee');
         $project  = $this->makeProject($company, $manager);
-        $member   = $this->makeUser($company, 'member');
+        $member   = $this->makeUser($company, 'employee');
 
         $project->members()->attach($member->id);
 
@@ -85,9 +85,9 @@ class MyTaskTest extends TestCase
     public function my_tasks_excludes_done_tasks_by_default(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->makeUser($company, 'member');
+        $member  = $this->makeUser($company, 'employee');
 
         $project->members()->attach($member->id);
 
@@ -105,9 +105,9 @@ class MyTaskTest extends TestCase
     public function my_tasks_sorts_by_due_date_asc_nulls_last(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
-        $member  = $this->makeUser($company, 'member');
+        $member  = $this->makeUser($company, 'employee');
 
         $project->members()->attach($member->id);
 
@@ -136,8 +136,8 @@ class MyTaskTest extends TestCase
         $projectA = $this->makeProject($companyA);
         $projectB = $this->makeProject($companyB);
 
-        $memberA  = $this->makeUser($companyA, 'member');
-        $memberB  = $this->makeUser($companyB, 'member');
+        $memberA  = $this->makeUser($companyA, 'employee');
+        $memberB  = $this->makeUser($companyB, 'employee');
 
         $projectA->members()->attach($memberA->id);
         $projectB->members()->attach($memberB->id);
@@ -164,7 +164,7 @@ class MyTaskTest extends TestCase
     public function overdue_shows_tasks_with_past_due_date_and_not_done(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $overdue  = $this->makeTask($project, ['title' => 'Overdue Task',  'due_date' => Carbon::yesterday(), 'status' => 'doing']);
@@ -183,7 +183,7 @@ class MyTaskTest extends TestCase
     public function overdue_excludes_done_tasks(): void
     {
         $company = $this->makeCompany();
-        $manager = $this->makeUser($company, 'project_manager');
+        $manager = $this->makeUser($company, 'employee');
         $project = $this->makeProject($company, $manager);
 
         $overdueDone    = $this->makeTask($project, ['title' => 'Done Overdue',   'due_date' => Carbon::yesterday(), 'status' => 'done',  'progress' => 100]);
@@ -200,12 +200,12 @@ class MyTaskTest extends TestCase
     public function overdue_member_sees_only_tasks_in_joined_projects(): void
     {
         $company  = $this->makeCompany();
-        $manager  = $this->makeUser($company, 'project_manager');
+        $manager  = $this->makeUser($company, 'employee');
 
         $projectA = $this->makeProject($company, $manager);
         $projectB = $this->makeProject($company, $manager);
 
-        $member   = $this->makeUser($company, 'member');
+        $member   = $this->makeUser($company, 'employee');
         $projectA->members()->attach($member->id);
         // projectB → member NOT joined
 
@@ -225,8 +225,8 @@ class MyTaskTest extends TestCase
         $companyA = $this->makeCompany();
         $companyB = $this->makeCompany();
 
-        $managerA = $this->makeUser($companyA, 'project_manager');
-        $managerB = $this->makeUser($companyB, 'project_manager');
+        $managerA = $this->makeUser($companyA, 'employee');
+        $managerB = $this->makeUser($companyB, 'employee');
 
         $projectA = $this->makeProject($companyA, $managerA);
         $projectB = $this->makeProject($companyB, $managerB);

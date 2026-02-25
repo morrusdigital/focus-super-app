@@ -2,70 +2,78 @@
 
 namespace App\Enums;
 
+/**
+ * Final global user roles for the Focus Super App.
+ *
+ * Roles:
+ *   holding_admin   – Administrator at holding-company level.
+ *   company_admin   – Administrator at subsidiary-company level.
+ *   finance_holding – Finance staff at holding level.
+ *   finance_company – Finance staff at subsidiary level.
+ *   employee        – General employee; project PM / member status is
+ *                     determined by the project model (project_manager_id
+ *                     and project_members), NOT by this role.
+ *
+ * Legacy note:
+ *   'admin_company' is preserved in LEGACY_MAP for backward compatibility
+ *   with old financial-module data. No new code should write this value.
+ */
 enum UserRole: string
 {
     case HoldingAdmin   = 'holding_admin';
     case CompanyAdmin   = 'company_admin';
-    case ProjectManager = 'project_manager';
-    case Member         = 'member';
+    case FinanceHolding = 'finance_holding';
+    case FinanceCompany = 'finance_company';
+    case Employee       = 'employee';
 
     /**
-     * Mapping legacy role strings to their equivalent new enum value.
-     * - 'finance_holding' is treated as HoldingAdmin
-     * - 'admin_company'   is treated as CompanyAdmin
+     * Legacy role strings still accepted as input but NOT stored as new values.
+     * Old financial-module data may still contain 'admin_company'.
      */
     private const LEGACY_MAP = [
-        'finance_holding' => self::HoldingAdmin,
-        'admin_company'   => self::CompanyAdmin,
+        'admin_company' => self::CompanyAdmin,
     ];
 
     /**
-     * Resolve any role string (legacy or new) into a UserRole enum value.
+     * Resolve any role string (final or legacy) into a UserRole enum value.
      * Returns null if the string does not match any known role.
      */
     public static function fromString(string $role): ?self
     {
-        // Try to resolve directly from enum value
         $found = self::tryFrom($role);
         if ($found !== null) {
             return $found;
         }
 
-        // Fall back to legacy map
         return self::LEGACY_MAP[$role] ?? null;
     }
 
-    /**
-     * Check if a given role string resolves to HoldingAdmin.
-     * Accepts both 'holding_admin' and legacy 'finance_holding'.
-     */
+    // ------------------------------------------------------------------
+    // Static role-check helpers
+    // ------------------------------------------------------------------
+
     public static function isHoldingAdmin(string $role): bool
     {
         return self::fromString($role) === self::HoldingAdmin;
     }
 
-    /**
-     * Check if a given role string resolves to CompanyAdmin.
-     * Accepts both 'company_admin' and legacy 'admin_company'.
-     */
     public static function isCompanyAdmin(string $role): bool
     {
         return self::fromString($role) === self::CompanyAdmin;
     }
 
-    /**
-     * Check if a given role string resolves to ProjectManager.
-     */
-    public static function isProjectManager(string $role): bool
+    public static function isFinanceHolding(string $role): bool
     {
-        return self::fromString($role) === self::ProjectManager;
+        return self::fromString($role) === self::FinanceHolding;
     }
 
-    /**
-     * Check if a given role string resolves to Member.
-     */
-    public static function isMember(string $role): bool
+    public static function isFinanceCompany(string $role): bool
     {
-        return self::fromString($role) === self::Member;
+        return self::fromString($role) === self::FinanceCompany;
+    }
+
+    public static function isEmployee(string $role): bool
+    {
+        return self::fromString($role) === self::Employee;
     }
 }

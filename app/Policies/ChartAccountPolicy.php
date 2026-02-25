@@ -9,17 +9,17 @@ class ChartAccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function view(User $user, ChartAccount $account): bool
     {
-        return $user->isAdminCompany() && $account->company_id === $user->company_id;
+        return $user->isCompanyAdmin() && $account->company_id === $user->company_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function update(User $user, ChartAccount $account): bool

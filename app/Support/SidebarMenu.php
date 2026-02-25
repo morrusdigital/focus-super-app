@@ -28,20 +28,19 @@ class SidebarMenu
      */
     public static function forUser(User $user): array
     {
-        // Priority order: holding > company_admin > project_manager > member
+        // Holding-level roles
         if ($user->isHoldingAdmin() || $user->isFinanceHolding()) {
             return static::holdingMenu();
         }
 
-        if ($user->isCompanyAdmin() || $user->isAdminCompany()) {
+        // Company-level admin / finance roles
+        if ($user->isCompanyAdmin() || $user->isFinanceCompany()) {
             return static::companyAdminMenu();
         }
 
-        if ($user->isProjectManager()) {
-            return static::projectManagerMenu();
-        }
-
-        if ($user->isMember()) {
+        // Employee: PM / member status is determined by the project model.
+        // Show member menu so employees see My Tasks + Overdue Tasks.
+        if ($user->isEmployee()) {
             return static::memberMenu();
         }
 

@@ -9,22 +9,22 @@ class CompanyBankAccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function view(User $user, CompanyBankAccount $bankAccount): bool
     {
-        return $user->isAdminCompany() && $bankAccount->company_id === $user->company_id;
+        return $user->isCompanyAdmin() && $bankAccount->company_id === $user->company_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isAdminCompany();
+        return $user->isCompanyAdmin();
     }
 
     public function update(User $user, CompanyBankAccount $bankAccount): bool
     {
-        return $user->isAdminCompany() && $bankAccount->company_id === $user->company_id;
+        return $user->isCompanyAdmin() && $bankAccount->company_id === $user->company_id;
     }
 
     public function delete(User $user, CompanyBankAccount $bankAccount): bool

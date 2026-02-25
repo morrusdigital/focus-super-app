@@ -50,53 +50,38 @@ class TaskPolicy
 
     /**
      * view:
-     *   project_manager → tasks in projects they manage OR joined as member
-     *   member          → tasks in projects they have joined
-     *   holding_admin / company_admin → NO access (they manage projects, not tasks)
+     *   PM (project_manager_id) or project member → can see tasks
+     *   admin roles → NO access (they manage projects, not tasks)
      */
     public function view(User $user, Task $task): bool
     {
-        if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task)
-                || $this->isMemberOfTaskProject($user, $task);
-        }
-
-        if ($user->isMember()) {
-            return $this->isMemberOfTaskProject($user, $task);
-        }
-
-        return false;
+        return $this->isProjectManagerOfTask($user, $task)
+            || $this->isMemberOfTaskProject($user, $task);
     }
 
     /**
      * update:
-     *   project_manager → tasks in projects they manage OR joined as member
-     *   holding_admin / company_admin / member → NOT allowed
+     *   PM (project_manager_id) → can update tasks in their project
+     *   members / admin roles → NOT allowed
      */
     public function update(User $user, Task $task): bool
     {
-        if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task)
-                || $this->isMemberOfTaskProject($user, $task);
-        }
-
-        return false;
+        return $this->isProjectManagerOfTask($user, $task);
     }
 
     /**
      * markDone:
-     *   project_manager → tasks in projects they manage OR joined as member
-     *   member          → only if they are an assignee of the task
-     *   holding_admin / company_admin → NOT allowed
+     *   PM (project_manager_id) → tasks in their project
+     *   project member who is assignee → only their own assigned task
+     *   admin roles → NOT allowed
      */
     public function markDone(User $user, Task $task): bool
     {
-        if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task)
-                || $this->isMemberOfTaskProject($user, $task);
+        if ($this->isProjectManagerOfTask($user, $task)) {
+            return true;
         }
 
-        if ($user->isMember()) {
+        if ($this->isMemberOfTaskProject($user, $task)) {
             return $this->isAssigneeOfTask($user, $task);
         }
 

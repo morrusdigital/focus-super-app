@@ -16,7 +16,7 @@ class ProjectRecapController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->when($user->isAdminCompany(), function ($query) use ($user) {
+            ->when($user->isCompanyAdmin(), function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
             ->when($user->isFinanceHolding(), function ($query) use ($user) {
