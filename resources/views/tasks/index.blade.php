@@ -23,7 +23,7 @@
     <div class="card">
         <div class="card-header pb-0 d-flex align-items-center justify-content-between">
             <h5>Daftar Task</h5>
-            @can('update', $project)
+            @can('manageTasks', $project)
                 <a class="btn btn-primary btn-sm" href="{{ route('projects.tasks.create', $project) }}">+ Tambah Task</a>
             @endcan
         </div>

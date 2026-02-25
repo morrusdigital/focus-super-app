@@ -57,7 +57,7 @@ class TaskPolicyTest extends TestCase
     // ---------------------------------------------------------------
 
     #[Test]
-    public function holding_admin_can_view_any_task(): void
+    public function holding_admin_cannot_view_task(): void
     {
         $company = $this->makeCompany();
         $other   = $this->makeCompany();
@@ -65,18 +65,20 @@ class TaskPolicyTest extends TestCase
         $project = $this->makeProject($other);
         $task    = $this->makeTask($other, $project);
 
-        $this->assertTrue($user->can('view', $task));
+        // holding_admin manages projects only, not tasks
+        $this->assertFalse($user->can('view', $task));
     }
 
     #[Test]
-    public function company_admin_can_view_task_in_own_company(): void
+    public function company_admin_cannot_view_task_in_own_company(): void
     {
         $company = $this->makeCompany();
         $user    = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
-        $this->assertTrue($user->can('view', $task));
+        // company_admin manages projects only, not tasks
+        $this->assertFalse($user->can('view', $task));
     }
 
     #[Test]
@@ -141,7 +143,7 @@ class TaskPolicyTest extends TestCase
     // ---------------------------------------------------------------
 
     #[Test]
-    public function holding_admin_can_update_any_task(): void
+    public function holding_admin_cannot_update_task(): void
     {
         $company = $this->makeCompany();
         $other   = $this->makeCompany();
@@ -149,18 +151,18 @@ class TaskPolicyTest extends TestCase
         $project = $this->makeProject($other);
         $task    = $this->makeTask($other, $project);
 
-        $this->assertTrue($user->can('update', $task));
+        $this->assertFalse($user->can('update', $task));
     }
 
     #[Test]
-    public function company_admin_can_update_task_in_own_company(): void
+    public function company_admin_cannot_update_task_in_own_company(): void
     {
         $company = $this->makeCompany();
         $user    = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
-        $this->assertTrue($user->can('update', $task));
+        $this->assertFalse($user->can('update', $task));
     }
 
     #[Test]
@@ -214,7 +216,7 @@ class TaskPolicyTest extends TestCase
     // ---------------------------------------------------------------
 
     #[Test]
-    public function holding_admin_can_mark_done_any_task(): void
+    public function holding_admin_cannot_mark_done_task(): void
     {
         $company = $this->makeCompany();
         $other   = $this->makeCompany();
@@ -222,18 +224,18 @@ class TaskPolicyTest extends TestCase
         $project = $this->makeProject($other);
         $task    = $this->makeTask($other, $project);
 
-        $this->assertTrue($user->can('markDone', $task));
+        $this->assertFalse($user->can('markDone', $task));
     }
 
     #[Test]
-    public function company_admin_can_mark_done_task_in_own_company(): void
+    public function company_admin_cannot_mark_done_task_in_own_company(): void
     {
         $company = $this->makeCompany();
         $user    = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
         $task    = $this->makeTask($company, $project);
 
-        $this->assertTrue($user->can('markDone', $task));
+        $this->assertFalse($user->can('markDone', $task));
     }
 
     #[Test]

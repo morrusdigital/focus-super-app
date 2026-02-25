@@ -77,10 +77,21 @@
                   </td>
                   <td>{{ $project->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
                   <td class="text-end">
-                    <a class="btn btn-sm btn-light" href="{{ route('projects.show', $project) }}">Detail</a>
-                    @can('update', $project)
-                      <a class="btn btn-sm btn-primary" href="{{ route('projects.edit', $project) }}">Edit</a>
-                    @endcan
+                    <div class="d-flex gap-1 justify-content-end flex-nowrap">
+                      <a class="btn btn-sm btn-light" href="{{ route('projects.show', $project) }}" title="Detail">
+                        <i data-feather="eye" style="width:14px;height:14px;"></i>
+                      </a>
+                      @can('viewKanban', $project)
+                        <a class="btn btn-sm btn-info" href="{{ route('projects.kanban', $project) }}" title="Kanban">
+                          <i data-feather="trello" style="width:14px;height:14px;"></i>
+                        </a>
+                      @endcan
+                      @can('update', $project)
+                        <a class="btn btn-sm btn-primary" href="{{ route('projects.edit', $project) }}" title="Edit">
+                          <i data-feather="edit-2" style="width:14px;height:14px;"></i>
+                        </a>
+                      @endcan
+                    </div>
                   </td>
                 </tr>
               @empty

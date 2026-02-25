@@ -21,7 +21,7 @@ class KanbanController extends Controller
      */
     public function show(Request $request, Project $project)
     {
-        $this->authorize('view', $project);
+        $this->authorize('viewKanban', $project);
 
         // Single query — load all tasks with their assignees
         $tasks = $project->tasks()

@@ -90,8 +90,10 @@ class ProjectPolicy
     }
 
     /**
-     * update — holding_admin (any), company_admin (own company),
-     *           project_manager (own project only).
+     * update — edit the project record itself.
+     *   holding_admin → any project
+     *   company_admin → own company only
+     *   project_manager / member → NOT allowed (they manage tasks, not the project)
      */
     public function update(User $user, Project $project): bool
     {
@@ -103,8 +105,39 @@ class ProjectPolicy
             return $this->isSameCompany($user, $project);
         }
 
+        return false;
+    }
+
+    /**
+     * manageTasks — create / edit tasks inside the project.
+     *   project_manager → projects they manage OR joined as member
+     *   holding_admin / company_admin / member → NOT allowed
+     */
+    public function manageTasks(User $user, Project $project): bool
+    {
         if ($user->isProjectManager()) {
-            return $this->isProjectManager($user, $project);
+            return $this->isProjectManager($user, $project)
+                || $this->isMemberOf($user, $project);
+        }
+
+        return false;
+    }
+
+    /**
+     * viewKanban — view the kanban board and task list.
+     *   project_manager → projects they manage OR joined as member
+     *   member          → projects they have joined
+     *   holding_admin / company_admin → NOT allowed
+     */
+    public function viewKanban(User $user, Project $project): bool
+    {
+        if ($user->isProjectManager()) {
+            return $this->isProjectManager($user, $project)
+                || $this->isMemberOf($user, $project);
+        }
+
+        if ($user->isMember()) {
+            return $this->isMemberOf($user, $project);
         }
 
         return false;

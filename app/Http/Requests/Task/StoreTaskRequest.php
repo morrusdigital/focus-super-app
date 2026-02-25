@@ -10,10 +10,10 @@ class StoreTaskRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Only users who can update the project may create tasks in it.
+        // Only users who can manage tasks in the project may create tasks.
         $project = $this->route('project');
 
-        return $this->user()?->can('update', $project) ?? false;
+        return $this->user()?->can('manageTasks', $project) ?? false;
     }
 
     public function rules(): array

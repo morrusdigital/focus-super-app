@@ -137,7 +137,7 @@ exit;
 
 #### Buat Task
 
-1. Buka `http://localhost:8000/projects/{project_id}/tasks/create`
+1. Buka ``
 2. Isi:
    - **Title**: `Task Pertama`
    - **Description**: `Deskripsi task pertama`

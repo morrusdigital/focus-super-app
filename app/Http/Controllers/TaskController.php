@@ -17,7 +17,7 @@ class TaskController extends Controller
 
     public function index(Project $project)
     {
-        $this->authorize('view', $project);
+        $this->authorize('viewKanban', $project);
 
         $tasks = $project->tasks()
             ->with('assignees')
@@ -34,7 +34,7 @@ class TaskController extends Controller
 
     public function create(Project $project)
     {
-        $this->authorize('update', $project);
+        $this->authorize('manageTasks', $project);
 
         $members = $project->members()->orderBy('name')->get();
 

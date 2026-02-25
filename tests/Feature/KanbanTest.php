@@ -64,15 +64,16 @@ class KanbanTest extends TestCase
     }
 
     #[Test]
-    public function company_admin_can_view_kanban_board(): void
+    public function company_admin_cannot_view_kanban_board(): void
     {
         $company = $this->makeCompany();
         $admin   = $this->makeUser($company, 'company_admin');
         $project = $this->makeProject($company);
 
+        // company_admin manages projects only, not kanban
         $this->actingAs($admin)
             ->get(route('projects.kanban', $project))
-            ->assertOk();
+            ->assertForbidden();
     }
 
     #[Test]
@@ -89,15 +90,16 @@ class KanbanTest extends TestCase
     }
 
     #[Test]
-    public function holding_admin_can_view_kanban_board(): void
+    public function holding_admin_cannot_view_kanban_board(): void
     {
         $company = $this->makeCompany();
         $holding = $this->makeUser($company, 'holding_admin');
         $project = $this->makeProject($company);
 
+        // holding_admin manages projects only, not kanban
         $this->actingAs($holding)
             ->get(route('projects.kanban', $project))
-            ->assertOk();
+            ->assertForbidden();
     }
 
     // ---------------------------------------------------------------

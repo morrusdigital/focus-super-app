@@ -50,23 +50,15 @@ class TaskPolicy
 
     /**
      * view:
-     *   holding_admin  → all tasks
-     *   company_admin  → tasks in own company
-     *   project_manager → tasks in projects they manage
-     *   member         → tasks in projects they have joined
+     *   project_manager → tasks in projects they manage OR joined as member
+     *   member          → tasks in projects they have joined
+     *   holding_admin / company_admin → NO access (they manage projects, not tasks)
      */
     public function view(User $user, Task $task): bool
     {
-        if ($user->isHoldingAdmin()) {
-            return true;
-        }
-
-        if ($user->isCompanyAdmin()) {
-            return $this->isSameCompany($user, $task);
-        }
-
         if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task);
+            return $this->isProjectManagerOfTask($user, $task)
+                || $this->isMemberOfTaskProject($user, $task);
         }
 
         if ($user->isMember()) {
@@ -78,23 +70,14 @@ class TaskPolicy
 
     /**
      * update:
-     *   holding_admin  → all tasks
-     *   company_admin  → tasks in own company
-     *   project_manager → tasks in projects they manage
-     *   member         → not allowed
+     *   project_manager → tasks in projects they manage OR joined as member
+     *   holding_admin / company_admin / member → NOT allowed
      */
     public function update(User $user, Task $task): bool
     {
-        if ($user->isHoldingAdmin()) {
-            return true;
-        }
-
-        if ($user->isCompanyAdmin()) {
-            return $this->isSameCompany($user, $task);
-        }
-
         if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task);
+            return $this->isProjectManagerOfTask($user, $task)
+                || $this->isMemberOfTaskProject($user, $task);
         }
 
         return false;
@@ -102,23 +85,15 @@ class TaskPolicy
 
     /**
      * markDone:
-     *   holding_admin  → all tasks
-     *   company_admin  → tasks in own company
-     *   project_manager → tasks in projects they manage
-     *   member         → only if they are an assignee of the task
+     *   project_manager → tasks in projects they manage OR joined as member
+     *   member          → only if they are an assignee of the task
+     *   holding_admin / company_admin → NOT allowed
      */
     public function markDone(User $user, Task $task): bool
     {
-        if ($user->isHoldingAdmin()) {
-            return true;
-        }
-
-        if ($user->isCompanyAdmin()) {
-            return $this->isSameCompany($user, $task);
-        }
-
         if ($user->isProjectManager()) {
-            return $this->isProjectManagerOfTask($user, $task);
+            return $this->isProjectManagerOfTask($user, $task)
+                || $this->isMemberOfTaskProject($user, $task);
         }
 
         if ($user->isMember()) {
