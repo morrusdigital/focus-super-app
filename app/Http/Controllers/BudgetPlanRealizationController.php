@@ -7,6 +7,7 @@ use App\Models\BudgetPlanItem;
 use App\Models\ProjectExpense;
 use App\Models\ProjectVendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BudgetPlanRealizationController extends Controller
@@ -35,33 +36,49 @@ class BudgetPlanRealizationController extends Controller
         $this->authorize('manageRealization', $budgetPlan);
 
         $data = $this->validatePayload($request);
-        $item = $this->resolveBudgetPlanItem($budgetPlan, (int) $data['budget_plan_item_id']);
-        $this->assertItemCanBeRealized($item);
-        $vendor = $this->resolveVendor(
-            (int) $item->project_id,
-            isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
-            $data['vendor_new_name'] ?? null
-        );
 
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
 
-        ProjectExpense::create([
-            'project_id' => (int) $item->project_id,
-            'budget_plan_id' => $budgetPlan->id,
-            'budget_plan_item_id' => $item->id,
-            'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
-            'vendor_id' => $vendor->id,
-            'chart_account_id' => (int) $item->chart_account_id,
-            'expense_date' => $data['expense_date'],
-            'item_name' => $item->item_name,
-            'unit_price' => $data['unit_price'],
-            'quantity' => $data['quantity'],
-            'unit' => $data['unit'],
-            'amount' => $amount,
-            'notes' => $data['notes'] ?? null,
-            'created_by' => $request->user()?->id,
-            'updated_by' => $request->user()?->id,
-        ]);
+        DB::transaction(function () use ($request, $budgetPlan, $data, $amount) {
+            /** @var BudgetPlanItem|null $item */
+            $item = BudgetPlanItem::query()
+                ->lockForUpdate()
+                ->where('budget_plan_id', $budgetPlan->id)
+                ->find((int) $data['budget_plan_item_id']);
+
+            if (! $item) {
+                throw ValidationException::withMessages([
+                    'budget_plan_item_id' => 'Item budget plan tidak valid.',
+                ]);
+            }
+
+            $this->assertItemCanBeRealized($item);
+            $this->assertAmountWithinRemaining($item, $amount);
+
+            $vendor = $this->resolveVendor(
+                (int) $item->project_id,
+                isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
+                $data['vendor_new_name'] ?? null
+            );
+
+            ProjectExpense::create([
+                'project_id' => (int) $item->project_id,
+                'budget_plan_id' => $budgetPlan->id,
+                'budget_plan_item_id' => $item->id,
+                'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
+                'vendor_id' => $vendor->id,
+                'chart_account_id' => (int) $item->chart_account_id,
+                'expense_date' => $data['expense_date'],
+                'item_name' => $item->item_name,
+                'unit_price' => $data['unit_price'],
+                'quantity' => $data['quantity'],
+                'unit' => $data['unit'],
+                'amount' => $amount,
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $request->user()?->id,
+                'updated_by' => $request->user()?->id,
+            ]);
+        });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil ditambahkan.');
@@ -73,24 +90,36 @@ class BudgetPlanRealizationController extends Controller
         $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
 
         $data = $this->validatePayload($request, false);
-        $vendor = $this->resolveVendor(
-            (int) $expense->project_id,
-            isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
-            $data['vendor_new_name'] ?? null
-        );
 
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
 
-        $expense->update([
-            'vendor_id' => $vendor->id,
-            'expense_date' => $data['expense_date'],
-            'unit_price' => $data['unit_price'],
-            'quantity' => $data['quantity'],
-            'unit' => $data['unit'],
-            'amount' => $amount,
-            'notes' => $data['notes'] ?? null,
-            'updated_by' => $request->user()?->id,
-        ]);
+        DB::transaction(function () use ($request, $expense, $data, $amount) {
+            /** @var BudgetPlanItem|null $item */
+            $item = BudgetPlanItem::query()
+                ->lockForUpdate()
+                ->find($expense->budget_plan_item_id);
+
+            if ($item) {
+                $this->assertAmountWithinRemaining($item, $amount, $expense->id);
+            }
+
+            $vendor = $this->resolveVendor(
+                (int) $expense->project_id,
+                isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
+                $data['vendor_new_name'] ?? null
+            );
+
+            $expense->update([
+                'vendor_id' => $vendor->id,
+                'expense_date' => $data['expense_date'],
+                'unit_price' => $data['unit_price'],
+                'quantity' => $data['quantity'],
+                'unit' => $data['unit'],
+                'amount' => $amount,
+                'notes' => $data['notes'] ?? null,
+                'updated_by' => $request->user()?->id,
+            ]);
+        });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil diperbarui.');
@@ -137,21 +166,6 @@ class BudgetPlanRealizationController extends Controller
         return $data;
     }
 
-    private function resolveBudgetPlanItem(BudgetPlan $budgetPlan, int $itemId): BudgetPlanItem
-    {
-        $item = BudgetPlanItem::query()
-            ->where('budget_plan_id', $budgetPlan->id)
-            ->find($itemId);
-
-        if (! $item) {
-            throw ValidationException::withMessages([
-                'budget_plan_item_id' => 'Item budget plan tidak valid.',
-            ]);
-        }
-
-        return $item;
-    }
-
     private function assertItemCanBeRealized(BudgetPlanItem $item): void
     {
         if (! $item->project_id) {
@@ -163,6 +177,27 @@ class BudgetPlanRealizationController extends Controller
         if (! $item->chart_account_id) {
             throw ValidationException::withMessages([
                 'budget_plan_item_id' => 'Item BP tidak memiliki akun.',
+            ]);
+        }
+    }
+
+    private function assertAmountWithinRemaining(BudgetPlanItem $item, float $amount, ?int $excludeExpenseId = null): void
+    {
+        $query = ProjectExpense::query()
+            ->where('budget_plan_item_id', $item->id)
+            ->where('expense_source', ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION);
+
+        if ($excludeExpenseId !== null) {
+            $query->where('id', '!=', $excludeExpenseId);
+        }
+
+        $currentRealized = (float) $query->sum('amount');
+        $allocated = (float) $item->line_total;
+        $remaining = round($allocated - $currentRealized, 2);
+
+        if (round($amount, 2) > $remaining) {
+            throw ValidationException::withMessages([
+                'unit_price' => 'Nominal realisasi melebihi sisa budget plan.',
             ]);
         }
     }
