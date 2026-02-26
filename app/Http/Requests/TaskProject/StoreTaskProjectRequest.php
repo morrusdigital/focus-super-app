@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Http\Requests\TaskProject;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreTaskProjectRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        // Any authenticated user belonging to a company may create a task project.
+        return $this->user() !== null;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name'               => ['required', 'string', 'max:255'],
+            'project_manager_id' => ['required', 'integer', 'exists:users,id'],
+        ];
+    }
+}

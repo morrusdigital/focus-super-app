@@ -63,6 +63,13 @@ class SidebarMenu
             ],
             [
                 'type'   => 'link',
+                'label'  => 'Task Projects',
+                'route'  => 'task-projects.index',
+                'icon'   => 'check-circle',
+                'active' => 'task-projects.*',
+            ],
+            [
+                'type'   => 'link',
                 'label'  => 'Rekap Project',
                 'route'  => 'project-recaps.index',
                 'icon'   => 'bar-chart-2',
@@ -126,6 +133,13 @@ class SidebarMenu
                 'route'  => 'projects.index',
                 'icon'   => 'layers',
                 'active' => 'projects.*',
+            ],
+            [
+                'type'   => 'link',
+                'label'  => 'Task Projects',
+                'route'  => 'task-projects.index',
+                'icon'   => 'check-circle',
+                'active' => 'task-projects.*',
             ],
             [
                 'type'   => 'link',
@@ -204,6 +218,13 @@ class SidebarMenu
                 'route'  => 'projects.index',
                 'icon'   => 'layers',
                 'active' => 'projects.*',
+            ],
+            [
+                'type'   => 'link',
+                'label'  => 'Task Projects',
+                'route'  => 'task-projects.index',
+                'icon'   => 'check-circle',
+                'active' => 'task-projects.*',
             ],
             [
                 'type'   => 'link',

@@ -18,6 +18,9 @@ use App\Http\Controllers\ProjectRecapController;
 use App\Http\Controllers\ProjectTermController;
 use App\Http\Controllers\ProjectVendorController;
 use App\Http\Controllers\TaxMasterController;
+use App\Http\Controllers\TaskProjectController;
+use App\Http\Controllers\TaskProjectKanbanController;
+use App\Http\Controllers\TaskProjectTaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +102,27 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
     Route::post('users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
     Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+
+
+    Route::resource('task-projects', TaskProjectController::class);
+
+    Route::get('task-projects/{taskProject}/kanban', [TaskProjectKanbanController::class, 'show'])
+        ->name('task-projects.kanban');
+    Route::patch('task-projects/{taskProject}/tasks/{task}/move', [TaskProjectKanbanController::class, 'move'])
+        ->name('task-projects.tasks.move');
+
+    Route::get('task-projects/{taskProject}/tasks', [TaskProjectTaskController::class, 'index'])
+        ->name('task-projects.tasks.index');
+    Route::get('task-projects/{taskProject}/tasks/create', [TaskProjectTaskController::class, 'create'])
+        ->name('task-projects.tasks.create');
+    Route::post('task-projects/{taskProject}/tasks', [TaskProjectTaskController::class, 'store'])
+        ->name('task-projects.tasks.store');
+    Route::get('task-projects/{taskProject}/tasks/{task}/edit', [TaskProjectTaskController::class, 'edit'])
+        ->name('task-projects.tasks.edit');
+    Route::put('task-projects/{taskProject}/tasks/{task}', [TaskProjectTaskController::class, 'update'])
+        ->name('task-projects.tasks.update');
+    Route::delete('task-projects/{taskProject}/tasks/{task}', [TaskProjectTaskController::class, 'destroy'])
+        ->name('task-projects.tasks.destroy');
 });
 
 Route::get('/', function () {
