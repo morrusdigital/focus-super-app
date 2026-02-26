@@ -110,12 +110,18 @@
                     </span>
                   </td>
                   <td class="text-end">
-                    @can('view', $user)
-                      <a class="btn btn-sm btn-light" href="{{ route('users.show', $user) }}">Detail</a>
-                    @endcan
-                    @can('update', $user)
-                      <a class="btn btn-sm btn-primary" href="{{ route('users.edit', $user) }}">Edit</a>
-                    @endcan
+                    <div class="d-flex gap-1 justify-content-end flex-nowrap">
+                      @can('view', $user)
+                        <a class="btn btn-sm btn-light" href="{{ route('users.show', $user) }}" title="Detail">
+                          <i data-feather="eye" style="width:14px;height:14px;"></i>
+                        </a>
+                      @endcan
+                      @can('update', $user)
+                        <a class="btn btn-sm btn-primary" href="{{ route('users.edit', $user) }}" title="Edit">
+                          <i data-feather="edit-2" style="width:14px;height:14px;"></i>
+                        </a>
+                      @endcan
+                    </div>
                   </td>
                 </tr>
               @empty
