@@ -222,7 +222,7 @@
           @can('manageRealization', $budgetPlan)
             <div class="border rounded p-3 mb-3">
               <h6 class="mb-3">Input Realisasi</h6>
-              <form method="post" action="{{ route('budget-plans.realizations.store', $budgetPlan) }}" class="js-realization-form">
+              <form method="post" action="{{ route('budget-plans.realizations.store', $budgetPlan) }}" class="js-realization-form" enctype="multipart/form-data">
                 @csrf
                 <div class="row g-3">
                   <div class="col-md-7">
@@ -289,6 +289,16 @@
                     <label class="form-label">Catatan</label>
                     <input class="form-control" name="notes" type="text">
                   </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Bukti Nota <span class="text-muted">(opsional, pdf/jpg/jpeg/png, maks 5MB)</span></label>
+                    <input class="form-control" name="invoice_proof_file" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    @error('invoice_proof_file') <small class="text-danger">{{ $message }}</small> @enderror
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Mutasi Rekening <span class="text-muted">(opsional, pdf/jpg/jpeg/png, maks 5MB)</span></label>
+                    <input class="form-control" name="bank_mutation_file" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    @error('bank_mutation_file') <small class="text-danger">{{ $message }}</small> @enderror
+                  </div>
                   <div class="col-md-12 text-end">
                     <button class="btn btn-primary" type="submit" @disabled($realisableItems->isEmpty())>Simpan Realisasi</button>
                   </div>
@@ -311,6 +321,8 @@
                   <th class="text-end">Harga Satuan</th>
                   <th class="text-end">Jumlah</th>
                   <th>Catatan</th>
+                  <th>Bukti Nota</th>
+                  <th>Mutasi Rekening</th>
                   <th class="text-end">Aksi</th>
                 </tr>
               </thead>
@@ -330,12 +342,28 @@
                     <td class="text-end">{{ number_format($realization->unit_price, 2, ',', '.') }}</td>
                     <td class="text-end">{{ number_format($realization->amount, 2, ',', '.') }}</td>
                     <td>{{ $realization->notes ?: '-' }}</td>
+                    <td>
+                      @if ($realization->invoice_proof_path)
+                        <a href="{{ route('budget-plans.realizations.invoice-proof', [$budgetPlan, $realization]) }}" target="_blank" class="btn btn-sm btn-outline-secondary">Unduh</a>
+                        <small class="d-block text-muted">{{ $realization->invoice_proof_original_name }}</small>
+                      @else
+                        <span class="text-muted">-</span>
+                      @endif
+                    </td>
+                    <td>
+                      @if ($realization->bank_mutation_path)
+                        <a href="{{ route('budget-plans.realizations.bank-mutation', [$budgetPlan, $realization]) }}" target="_blank" class="btn btn-sm btn-outline-secondary">Unduh</a>
+                        <small class="d-block text-muted">{{ $realization->bank_mutation_original_name }}</small>
+                      @else
+                        <span class="text-muted">-</span>
+                      @endif
+                    </td>
                     <td class="text-end">
                       @can('manageRealization', $budgetPlan)
                         <details class="d-inline-block">
                           <summary class="btn btn-sm btn-primary d-inline-block">Edit</summary>
                           <div class="mt-2 p-2 border rounded bg-light text-start" style="min-width: 500px;">
-                            <form method="post" action="{{ route('budget-plans.realizations.update', [$budgetPlan, $realization]) }}" class="js-realization-form">
+                            <form method="post" action="{{ route('budget-plans.realizations.update', [$budgetPlan, $realization]) }}" class="js-realization-form" enctype="multipart/form-data">
                               @csrf
                               @method('put')
                               <div class="row g-2">
@@ -387,6 +415,22 @@
                                   <input class="form-control form-control-sm" name="notes" type="text"
                                     value="{{ $realization->notes }}">
                                 </div>
+                                <div class="col-md-6">
+                                  <label class="form-label mb-1">Bukti Nota baru <span class="text-muted">(pdf/jpg/jpeg/png, maks 5MB)</span></label>
+                                  <input class="form-control form-control-sm" name="invoice_proof_file" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                                  @if ($realization->invoice_proof_path)
+                                    <small class="text-success d-block mt-1">File ada: {{ $realization->invoice_proof_original_name }}</small>
+                                  @endif
+                                  @error('invoice_proof_file') <small class="text-danger">{{ $message }}</small> @enderror
+                                </div>
+                                <div class="col-md-6">
+                                  <label class="form-label mb-1">Mutasi Rekening baru <span class="text-muted">(pdf/jpg/jpeg/png, maks 5MB)</span></label>
+                                  <input class="form-control form-control-sm" name="bank_mutation_file" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                                  @if ($realization->bank_mutation_path)
+                                    <small class="text-success d-block mt-1">File ada: {{ $realization->bank_mutation_original_name }}</small>
+                                  @endif
+                                  @error('bank_mutation_file') <small class="text-danger">{{ $message }}</small> @enderror
+                                </div>
                                 <div class="col-md-12 text-end">
                                   <button class="btn btn-sm btn-primary" type="submit">Simpan</button>
                                 </div>
@@ -407,7 +451,7 @@
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="11" class="text-center">Belum ada transaksi realisasi.</td>
+                    <td colspan="13" class="text-center">Belum ada transaksi realisasi.</td>
                   </tr>
                 @endforelse
               </tbody>

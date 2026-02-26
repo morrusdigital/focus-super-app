@@ -7,7 +7,9 @@ use App\Models\BudgetPlanItem;
 use App\Models\ProjectExpense;
 use App\Models\ProjectVendor;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class BudgetPlanRealizationController extends Controller
@@ -61,7 +63,7 @@ class BudgetPlanRealizationController extends Controller
                 $data['vendor_new_name'] ?? null
             );
 
-            ProjectExpense::create([
+            $expense = ProjectExpense::create([
                 'project_id' => (int) $item->project_id,
                 'budget_plan_id' => $budgetPlan->id,
                 'budget_plan_item_id' => $item->id,
@@ -78,6 +80,16 @@ class BudgetPlanRealizationController extends Controller
                 'created_by' => $request->user()?->id,
                 'updated_by' => $request->user()?->id,
             ]);
+
+            $storagePath = $this->attachmentStoragePath($budgetPlan, (int) $item->project_id);
+
+            if ($request->hasFile('invoice_proof_file')) {
+                $this->storeAttachment($expense, $request->file('invoice_proof_file'), 'invoice_proof', $storagePath, $request->user()?->id);
+            }
+
+            if ($request->hasFile('bank_mutation_file')) {
+                $this->storeAttachment($expense, $request->file('bank_mutation_file'), 'bank_mutation', $storagePath, $request->user()?->id);
+            }
         });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
@@ -93,7 +105,7 @@ class BudgetPlanRealizationController extends Controller
 
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
 
-        DB::transaction(function () use ($request, $expense, $data, $amount) {
+        DB::transaction(function () use ($request, $budgetPlan, $expense, $data, $amount) {
             /** @var BudgetPlanItem|null $item */
             $item = BudgetPlanItem::query()
                 ->lockForUpdate()
@@ -119,6 +131,18 @@ class BudgetPlanRealizationController extends Controller
                 'notes' => $data['notes'] ?? null,
                 'updated_by' => $request->user()?->id,
             ]);
+
+            $storagePath = $this->attachmentStoragePath($budgetPlan, (int) $expense->project_id);
+
+            if ($request->hasFile('invoice_proof_file')) {
+                $this->deleteAttachmentFile($expense->invoice_proof_path);
+                $this->storeAttachment($expense, $request->file('invoice_proof_file'), 'invoice_proof', $storagePath, $request->user()?->id);
+            }
+
+            if ($request->hasFile('bank_mutation_file')) {
+                $this->deleteAttachmentFile($expense->bank_mutation_path);
+                $this->storeAttachment($expense, $request->file('bank_mutation_file'), 'bank_mutation', $storagePath, $request->user()?->id);
+            }
         });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
@@ -130,10 +154,70 @@ class BudgetPlanRealizationController extends Controller
         $this->authorize('manageRealization', $budgetPlan);
         $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
 
+        $this->deleteAttachmentFile($expense->invoice_proof_path);
+        $this->deleteAttachmentFile($expense->bank_mutation_path);
+
         $expense->delete();
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil dihapus.');
+    }
+
+    public function downloadInvoiceProof(BudgetPlan $budgetPlan, ProjectExpense $expense)
+    {
+        $this->authorize('view', $budgetPlan);
+        $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
+
+        if (! $expense->invoice_proof_path || ! Storage::exists($expense->invoice_proof_path)) {
+            abort(404, 'File bukti nota tidak ditemukan.');
+        }
+
+        return Storage::download($expense->invoice_proof_path, $expense->invoice_proof_original_name);
+    }
+
+    public function downloadBankMutation(BudgetPlan $budgetPlan, ProjectExpense $expense)
+    {
+        $this->authorize('view', $budgetPlan);
+        $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
+
+        if (! $expense->bank_mutation_path || ! Storage::exists($expense->bank_mutation_path)) {
+            abort(404, 'File mutasi rekening tidak ditemukan.');
+        }
+
+        return Storage::download($expense->bank_mutation_path, $expense->bank_mutation_original_name);
+    }
+
+    private function attachmentStoragePath(BudgetPlan $budgetPlan, int $projectId): string
+    {
+        return 'realizations/' . $budgetPlan->company_id . '/' . $budgetPlan->id . '/' . $projectId;
+    }
+
+    private function storeAttachment(
+        ProjectExpense $expense,
+        UploadedFile $file,
+        string $type,
+        string $storagePath,
+        ?int $uploadedBy
+    ): void {
+        $extension = $file->getClientOriginalExtension();
+        $filename = uniqid($type . '_', true) . '.' . $extension;
+        $path = $file->storeAs($storagePath, $filename);
+
+        $expense->update([
+            "{$type}_path" => $path,
+            "{$type}_original_name" => $file->getClientOriginalName(),
+            "{$type}_mime" => $file->getMimeType(),
+            "{$type}_size" => $file->getSize(),
+            "{$type}_uploaded_by" => $uploadedBy,
+            "{$type}_uploaded_at" => now(),
+        ]);
+    }
+
+    private function deleteAttachmentFile(?string $path): void
+    {
+        if ($path && Storage::exists($path)) {
+            Storage::delete($path);
+        }
     }
 
     private function validatePayload(Request $request, bool $withItem = true): array
@@ -146,6 +230,8 @@ class BudgetPlanRealizationController extends Controller
             'notes' => ['nullable', 'string'],
             'vendor_id' => ['nullable', 'integer'],
             'vendor_new_name' => ['nullable', 'string', 'max:255'],
+            'invoice_proof_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'bank_mutation_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
 
         if ($withItem) {

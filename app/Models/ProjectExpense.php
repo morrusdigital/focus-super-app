@@ -28,6 +28,20 @@ class ProjectExpense extends Model
         'notes',
         'created_by',
         'updated_by',
+        // Invoice proof attachment
+        'invoice_proof_path',
+        'invoice_proof_original_name',
+        'invoice_proof_mime',
+        'invoice_proof_size',
+        'invoice_proof_uploaded_by',
+        'invoice_proof_uploaded_at',
+        // Bank mutation attachment
+        'bank_mutation_path',
+        'bank_mutation_original_name',
+        'bank_mutation_mime',
+        'bank_mutation_size',
+        'bank_mutation_uploaded_by',
+        'bank_mutation_uploaded_at',
     ];
 
     protected $casts = [
@@ -35,6 +49,8 @@ class ProjectExpense extends Model
         'unit_price' => 'decimal:2',
         'quantity' => 'decimal:2',
         'amount' => 'decimal:2',
+        'invoice_proof_uploaded_at' => 'datetime',
+        'bank_mutation_uploaded_at' => 'datetime',
     ];
 
     public function project()

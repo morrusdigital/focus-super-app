@@ -53,6 +53,10 @@ Route::middleware('auth')->group(function () {
         ->name('budget-plans.realizations.update');
     Route::delete('budget-plans/{budget_plan}/realizations/{expense}', [BudgetPlanRealizationController::class, 'destroy'])
         ->name('budget-plans.realizations.destroy');
+    Route::get('budget-plans/{budget_plan}/realizations/{expense}/invoice-proof', [BudgetPlanRealizationController::class, 'downloadInvoiceProof'])
+        ->name('budget-plans.realizations.invoice-proof');
+    Route::get('budget-plans/{budget_plan}/realizations/{expense}/bank-mutation', [BudgetPlanRealizationController::class, 'downloadBankMutation'])
+        ->name('budget-plans.realizations.bank-mutation');
 
     Route::resource('projects', ProjectController::class);
     Route::post('projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
