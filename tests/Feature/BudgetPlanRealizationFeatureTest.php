@@ -11,6 +11,8 @@ use App\Models\ProjectExpense;
 use App\Models\ProjectVendor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BudgetPlanRealizationFeatureTest extends TestCase
@@ -151,7 +153,7 @@ class BudgetPlanRealizationFeatureTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_realisasi_can_be_updated_deleted_and_shows_over_budget_warning(): void
+    public function test_realisasi_can_be_updated_and_deleted(): void
     {
         [, $admin, $project, $chartAccount, $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
 
@@ -170,30 +172,26 @@ class BudgetPlanRealizationFeatureTest extends TestCase
             'expense_date' => now()->toDateString(),
             'item_name' => $item->item_name,
             'unit_price' => 500000,
-            'quantity' => 2,
+            'quantity' => 1,
             'unit' => 'unit',
-            'amount' => 1000000,
+            'amount' => 500000,
             'notes' => 'Awal',
         ]);
 
+        // Update within budget: 500000 → 800000 (both ≤ line_total 1000000)
         $this->actingAs($admin)->put(route('budget-plans.realizations.update', [$budgetPlan, $realization]), [
             'expense_date' => now()->toDateString(),
             'vendor_new_name' => 'Vendor Y',
-            'unit_price' => 600000,
-            'quantity' => 2,
+            'unit_price' => 800000,
+            'quantity' => 1,
             'unit' => 'unit',
             'notes' => 'Update',
         ])->assertRedirect(route('budget-plans.show', $budgetPlan));
 
         $realization->refresh();
-        $this->assertSame('1200000.00', (string) $realization->amount);
+        $this->assertSame('800000.00', (string) $realization->amount);
         $this->assertSame('Update', $realization->notes);
         $this->assertSame(ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION, $realization->expense_source);
-
-        $showResponse = $this->actingAs($admin)->get(route('budget-plans.show', $budgetPlan));
-        $showResponse->assertOk();
-        $showResponse->assertSee('Over Budget');
-        $showResponse->assertSee('Selisih: Rp 200.000,00');
 
         $this->actingAs($admin)->delete(route('budget-plans.realizations.destroy', [$budgetPlan, $realization]))
             ->assertRedirect(route('budget-plans.show', $budgetPlan));
@@ -201,6 +199,37 @@ class BudgetPlanRealizationFeatureTest extends TestCase
         $this->assertDatabaseMissing('project_expenses', [
             'id' => $realization->id,
         ]);
+    }
+
+    public function test_realisasi_shows_over_budget_warning(): void
+    {
+        [, $admin, $project, $chartAccount, $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $vendor = ProjectVendor::create([
+            'project_id' => $project->id,
+            'name' => 'Vendor Over Budget',
+        ]);
+
+        // Directly insert an over-budget record to simulate legacy/edge-case data
+        ProjectExpense::create([
+            'project_id' => $project->id,
+            'budget_plan_id' => $budgetPlan->id,
+            'budget_plan_item_id' => $item->id,
+            'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
+            'vendor_id' => $vendor->id,
+            'chart_account_id' => $chartAccount->id,
+            'expense_date' => now()->toDateString(),
+            'item_name' => $item->item_name,
+            'unit_price' => 1200000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'amount' => 1200000,
+        ]);
+
+        $showResponse = $this->actingAs($admin)->get(route('budget-plans.show', $budgetPlan));
+        $showResponse->assertOk();
+        $showResponse->assertSee('Over Budget');
+        $showResponse->assertSee('Selisih: Rp 200.000,00');
     }
 
     public function test_project_expense_from_bp_realisasi_is_read_only_in_project_module(): void
@@ -244,6 +273,330 @@ class BudgetPlanRealizationFeatureTest extends TestCase
 
         $this->actingAs($admin)->delete(route('projects.expenses.destroy', [$project, $realization]))
             ->assertSessionHasErrors(['expense']);
+    }
+
+    public function test_create_over_limit_is_rejected(): void
+    {
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+        // item->line_total = 1000000
+
+        $response = $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor Over',
+            'unit_price' => 600000,
+            'quantity' => 2, // 1200000 > 1000000
+            'unit' => 'unit',
+        ]);
+
+        $response->assertSessionHasErrors(['unit_price']);
+        $this->assertDatabaseEmpty('project_expenses');
+    }
+
+    public function test_update_over_limit_is_rejected(): void
+    {
+        [, $admin, $project, $chartAccount, $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+        // item->line_total = 1000000
+
+        $vendor = ProjectVendor::create(['project_id' => $project->id, 'name' => 'Vendor A']);
+
+        $realization = ProjectExpense::create([
+            'project_id' => $project->id,
+            'budget_plan_id' => $budgetPlan->id,
+            'budget_plan_item_id' => $item->id,
+            'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
+            'vendor_id' => $vendor->id,
+            'chart_account_id' => $chartAccount->id,
+            'expense_date' => now()->toDateString(),
+            'item_name' => $item->item_name,
+            'unit_price' => 500000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'amount' => 500000,
+        ]);
+
+        // Try to update to 1200000 (exceeds line_total 1000000 when excluding this record: remaining=1000000)
+        $response = $this->actingAs($admin)->put(route('budget-plans.realizations.update', [$budgetPlan, $realization]), [
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor B',
+            'unit_price' => 600000,
+            'quantity' => 2, // 1200000 > 1000000
+            'unit' => 'unit',
+        ]);
+
+        $response->assertSessionHasErrors(['unit_price']);
+        $this->assertSame('500000.00', (string) $realization->fresh()->amount);
+    }
+
+    public function test_create_exact_remaining_is_accepted(): void
+    {
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+        // item->line_total = 1000000; exact same as remaining should be accepted
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor Exact',
+            'unit_price' => 1000000,
+            'quantity' => 1,
+            'unit' => 'unit',
+        ])->assertRedirect(route('budget-plans.show', $budgetPlan));
+
+        $this->assertDatabaseHas('project_expenses', [
+            'budget_plan_item_id' => $item->id,
+            'amount' => 1000000,
+        ]);
+    }
+
+    public function test_parallel_transactions_do_not_cause_over_realization(): void
+    {
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+        // item->line_total = 1000000
+
+        // First request: 600000 – succeeds
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor P1',
+            'unit_price' => 600000,
+            'quantity' => 1,
+            'unit' => 'unit',
+        ])->assertRedirect(route('budget-plans.show', $budgetPlan));
+
+        // Second request: 600000 more → total 1200000 > 1000000 – must be rejected
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor P2',
+            'unit_price' => 600000,
+            'quantity' => 1,
+            'unit' => 'unit',
+        ])->assertSessionHasErrors(['unit_price']);
+
+        // Total must not exceed line_total
+        $total = ProjectExpense::where('budget_plan_item_id', $item->id)
+            ->where('expense_source', ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION)
+            ->sum('amount');
+
+        $this->assertEquals(600000, $total);
+    }
+
+    public function test_create_realization_with_attachment_files(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $invoiceFile = UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf');
+        $mutationFile = UploadedFile::fake()->create('mutasi.jpg', 200, 'image/jpeg');
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor File',
+            'unit_price' => 500000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $invoiceFile,
+            'bank_mutation_file' => $mutationFile,
+        ])->assertRedirect(route('budget-plans.show', $budgetPlan));
+
+        $expense = ProjectExpense::where('budget_plan_id', $budgetPlan->id)->firstOrFail();
+
+        $this->assertNotNull($expense->invoice_proof_path);
+        $this->assertSame('nota.pdf', $expense->invoice_proof_original_name);
+        $this->assertNotNull($expense->invoice_proof_uploaded_at);
+        $this->assertSame($admin->id, $expense->invoice_proof_uploaded_by);
+
+        $this->assertNotNull($expense->bank_mutation_path);
+        $this->assertSame('mutasi.jpg', $expense->bank_mutation_original_name);
+        $this->assertNotNull($expense->bank_mutation_uploaded_at);
+
+        Storage::assertExists($expense->invoice_proof_path);
+        Storage::assertExists($expense->bank_mutation_path);
+    }
+
+    public function test_update_realization_replaces_old_attachment_files(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, $project, $chartAccount, $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $vendor = ProjectVendor::create(['project_id' => $project->id, 'name' => 'Vendor File']);
+
+        $oldInvoice = UploadedFile::fake()->create('old_nota.pdf', 50, 'application/pdf');
+        $oldMutation = UploadedFile::fake()->create('old_mutasi.pdf', 50, 'application/pdf');
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_id' => $vendor->id,
+            'unit_price' => 300000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $oldInvoice,
+            'bank_mutation_file' => $oldMutation,
+        ])->assertRedirect();
+
+        $expense = ProjectExpense::where('budget_plan_id', $budgetPlan->id)->firstOrFail();
+        $oldInvoicePath = $expense->invoice_proof_path;
+        $oldMutationPath = $expense->bank_mutation_path;
+
+        Storage::assertExists($oldInvoicePath);
+        Storage::assertExists($oldMutationPath);
+
+        $newInvoice = UploadedFile::fake()->create('new_nota.png', 80, 'image/png');
+        $newMutation = UploadedFile::fake()->create('new_mutasi.jpg', 80, 'image/jpeg');
+
+        $this->actingAs($admin)->put(route('budget-plans.realizations.update', [$budgetPlan, $expense]), [
+            'expense_date' => now()->toDateString(),
+            'vendor_id' => $vendor->id,
+            'unit_price' => 300000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $newInvoice,
+            'bank_mutation_file' => $newMutation,
+        ])->assertRedirect();
+
+        $expense->refresh();
+
+        Storage::assertMissing($oldInvoicePath);
+        Storage::assertMissing($oldMutationPath);
+        Storage::assertExists($expense->invoice_proof_path);
+        Storage::assertExists($expense->bank_mutation_path);
+
+        $this->assertSame('new_nota.png', $expense->invoice_proof_original_name);
+        $this->assertSame('new_mutasi.jpg', $expense->bank_mutation_original_name);
+    }
+
+    public function test_authorized_user_can_download_attachment_files(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, $project, , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $vendor = ProjectVendor::create(['project_id' => $project->id, 'name' => 'Vendor DL']);
+        $invoiceFile = UploadedFile::fake()->create('nota.pdf', 50, 'application/pdf');
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_id' => $vendor->id,
+            'unit_price' => 200000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $invoiceFile,
+        ])->assertRedirect();
+
+        $expense = ProjectExpense::where('budget_plan_id', $budgetPlan->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('budget-plans.realizations.invoice-proof', [$budgetPlan, $expense]))
+            ->assertOk();
+    }
+
+    public function test_unauthorized_user_cannot_download_attachment(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, $project, , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $vendor = ProjectVendor::create(['project_id' => $project->id, 'name' => 'Vendor DL2']);
+        $invoiceFile = UploadedFile::fake()->create('nota.pdf', 50, 'application/pdf');
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_id' => $vendor->id,
+            'unit_price' => 200000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $invoiceFile,
+        ])->assertRedirect();
+
+        $expense = ProjectExpense::where('budget_plan_id', $budgetPlan->id)->firstOrFail();
+
+        $otherCompany = Company::create(['name' => 'Other', 'type' => 'company']);
+        $otherAdmin = User::factory()->create(['company_id' => $otherCompany->id, 'role' => 'admin_company']);
+
+        $this->actingAs($otherAdmin)
+            ->get(route('budget-plans.realizations.invoice-proof', [$budgetPlan, $expense]))
+            ->assertForbidden();
+    }
+
+    public function test_attachment_file_with_invalid_format_is_rejected(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $invalidFile = UploadedFile::fake()->create('virus.exe', 100, 'application/octet-stream');
+
+        $response = $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor Bad',
+            'unit_price' => 100000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $invalidFile,
+        ]);
+
+        $response->assertSessionHasErrors(['invoice_proof_file']);
+        $this->assertDatabaseEmpty('project_expenses');
+    }
+
+    public function test_attachment_file_exceeding_5mb_is_rejected(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $largeFile = UploadedFile::fake()->create('big.pdf', 6000, 'application/pdf'); // 6MB
+
+        $response = $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor Big',
+            'unit_price' => 100000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $largeFile,
+        ]);
+
+        $response->assertSessionHasErrors(['invoice_proof_file']);
+        $this->assertDatabaseEmpty('project_expenses');
+    }
+
+    public function test_destroying_realization_deletes_attachment_files(): void
+    {
+        Storage::fake('local');
+
+        [, $admin, , , $budgetPlan, $item] = $this->makeApprovedBudgetPlanContext();
+
+        $invoiceFile = UploadedFile::fake()->create('nota.pdf', 50, 'application/pdf');
+
+        $this->actingAs($admin)->post(route('budget-plans.realizations.store', $budgetPlan), [
+            'budget_plan_item_id' => $item->id,
+            'expense_date' => now()->toDateString(),
+            'vendor_new_name' => 'Vendor Del',
+            'unit_price' => 200000,
+            'quantity' => 1,
+            'unit' => 'unit',
+            'invoice_proof_file' => $invoiceFile,
+        ])->assertRedirect();
+
+        $expense = ProjectExpense::where('budget_plan_id', $budgetPlan->id)->firstOrFail();
+        $path = $expense->invoice_proof_path;
+
+        Storage::assertExists($path);
+
+        $this->actingAs($admin)
+            ->delete(route('budget-plans.realizations.destroy', [$budgetPlan, $expense]))
+            ->assertRedirect();
+
+        Storage::assertMissing($path);
+        $this->assertDatabaseMissing('project_expenses', ['id' => $expense->id]);
     }
 
     private function makeApprovedBudgetPlanContext(): array

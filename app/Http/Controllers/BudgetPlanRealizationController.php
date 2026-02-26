@@ -7,6 +7,9 @@ use App\Models\BudgetPlanItem;
 use App\Models\ProjectExpense;
 use App\Models\ProjectVendor;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class BudgetPlanRealizationController extends Controller
@@ -35,33 +38,59 @@ class BudgetPlanRealizationController extends Controller
         $this->authorize('manageRealization', $budgetPlan);
 
         $data = $this->validatePayload($request);
-        $item = $this->resolveBudgetPlanItem($budgetPlan, (int) $data['budget_plan_item_id']);
-        $this->assertItemCanBeRealized($item);
-        $vendor = $this->resolveVendor(
-            (int) $item->project_id,
-            isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
-            $data['vendor_new_name'] ?? null
-        );
 
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
 
-        ProjectExpense::create([
-            'project_id' => (int) $item->project_id,
-            'budget_plan_id' => $budgetPlan->id,
-            'budget_plan_item_id' => $item->id,
-            'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
-            'vendor_id' => $vendor->id,
-            'chart_account_id' => (int) $item->chart_account_id,
-            'expense_date' => $data['expense_date'],
-            'item_name' => $item->item_name,
-            'unit_price' => $data['unit_price'],
-            'quantity' => $data['quantity'],
-            'unit' => $data['unit'],
-            'amount' => $amount,
-            'notes' => $data['notes'] ?? null,
-            'created_by' => $request->user()?->id,
-            'updated_by' => $request->user()?->id,
-        ]);
+        DB::transaction(function () use ($request, $budgetPlan, $data, $amount) {
+            /** @var BudgetPlanItem|null $item */
+            $item = BudgetPlanItem::query()
+                ->lockForUpdate()
+                ->where('budget_plan_id', $budgetPlan->id)
+                ->find((int) $data['budget_plan_item_id']);
+
+            if (! $item) {
+                throw ValidationException::withMessages([
+                    'budget_plan_item_id' => 'Item budget plan tidak valid.',
+                ]);
+            }
+
+            $this->assertItemCanBeRealized($item);
+            $this->assertAmountWithinRemaining($item, $amount);
+
+            $vendor = $this->resolveVendor(
+                (int) $item->project_id,
+                isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
+                $data['vendor_new_name'] ?? null
+            );
+
+            $expense = ProjectExpense::create([
+                'project_id' => (int) $item->project_id,
+                'budget_plan_id' => $budgetPlan->id,
+                'budget_plan_item_id' => $item->id,
+                'expense_source' => ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION,
+                'vendor_id' => $vendor->id,
+                'chart_account_id' => (int) $item->chart_account_id,
+                'expense_date' => $data['expense_date'],
+                'item_name' => $item->item_name,
+                'unit_price' => $data['unit_price'],
+                'quantity' => $data['quantity'],
+                'unit' => $data['unit'],
+                'amount' => $amount,
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $request->user()?->id,
+                'updated_by' => $request->user()?->id,
+            ]);
+
+            $storagePath = $this->attachmentStoragePath($budgetPlan, (int) $item->project_id);
+
+            if ($request->hasFile('invoice_proof_file')) {
+                $this->storeAttachment($expense, $request->file('invoice_proof_file'), 'invoice_proof', $storagePath, $request->user()?->id);
+            }
+
+            if ($request->hasFile('bank_mutation_file')) {
+                $this->storeAttachment($expense, $request->file('bank_mutation_file'), 'bank_mutation', $storagePath, $request->user()?->id);
+            }
+        });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil ditambahkan.');
@@ -73,24 +102,48 @@ class BudgetPlanRealizationController extends Controller
         $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
 
         $data = $this->validatePayload($request, false);
-        $vendor = $this->resolveVendor(
-            (int) $expense->project_id,
-            isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
-            $data['vendor_new_name'] ?? null
-        );
 
         $amount = round((float) $data['unit_price'] * (float) $data['quantity'], 2);
 
-        $expense->update([
-            'vendor_id' => $vendor->id,
-            'expense_date' => $data['expense_date'],
-            'unit_price' => $data['unit_price'],
-            'quantity' => $data['quantity'],
-            'unit' => $data['unit'],
-            'amount' => $amount,
-            'notes' => $data['notes'] ?? null,
-            'updated_by' => $request->user()?->id,
-        ]);
+        DB::transaction(function () use ($request, $budgetPlan, $expense, $data, $amount) {
+            /** @var BudgetPlanItem|null $item */
+            $item = BudgetPlanItem::query()
+                ->lockForUpdate()
+                ->find($expense->budget_plan_item_id);
+
+            if ($item) {
+                $this->assertAmountWithinRemaining($item, $amount, $expense->id);
+            }
+
+            $vendor = $this->resolveVendor(
+                (int) $expense->project_id,
+                isset($data['vendor_id']) ? (int) $data['vendor_id'] : null,
+                $data['vendor_new_name'] ?? null
+            );
+
+            $expense->update([
+                'vendor_id' => $vendor->id,
+                'expense_date' => $data['expense_date'],
+                'unit_price' => $data['unit_price'],
+                'quantity' => $data['quantity'],
+                'unit' => $data['unit'],
+                'amount' => $amount,
+                'notes' => $data['notes'] ?? null,
+                'updated_by' => $request->user()?->id,
+            ]);
+
+            $storagePath = $this->attachmentStoragePath($budgetPlan, (int) $expense->project_id);
+
+            if ($request->hasFile('invoice_proof_file')) {
+                $this->deleteAttachmentFile($expense->invoice_proof_path);
+                $this->storeAttachment($expense, $request->file('invoice_proof_file'), 'invoice_proof', $storagePath, $request->user()?->id);
+            }
+
+            if ($request->hasFile('bank_mutation_file')) {
+                $this->deleteAttachmentFile($expense->bank_mutation_path);
+                $this->storeAttachment($expense, $request->file('bank_mutation_file'), 'bank_mutation', $storagePath, $request->user()?->id);
+            }
+        });
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil diperbarui.');
@@ -101,10 +154,70 @@ class BudgetPlanRealizationController extends Controller
         $this->authorize('manageRealization', $budgetPlan);
         $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
 
+        $this->deleteAttachmentFile($expense->invoice_proof_path);
+        $this->deleteAttachmentFile($expense->bank_mutation_path);
+
         $expense->delete();
 
         return redirect()->route('budget-plans.show', $budgetPlan)
             ->with('status', 'Realisasi budget plan berhasil dihapus.');
+    }
+
+    public function downloadInvoiceProof(BudgetPlan $budgetPlan, ProjectExpense $expense)
+    {
+        $this->authorize('view', $budgetPlan);
+        $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
+
+        if (! $expense->invoice_proof_path || ! Storage::exists($expense->invoice_proof_path)) {
+            abort(404, 'File bukti nota tidak ditemukan.');
+        }
+
+        return Storage::download($expense->invoice_proof_path, $expense->invoice_proof_original_name);
+    }
+
+    public function downloadBankMutation(BudgetPlan $budgetPlan, ProjectExpense $expense)
+    {
+        $this->authorize('view', $budgetPlan);
+        $this->assertExpenseBelongsToBudgetPlan($budgetPlan, $expense);
+
+        if (! $expense->bank_mutation_path || ! Storage::exists($expense->bank_mutation_path)) {
+            abort(404, 'File mutasi rekening tidak ditemukan.');
+        }
+
+        return Storage::download($expense->bank_mutation_path, $expense->bank_mutation_original_name);
+    }
+
+    private function attachmentStoragePath(BudgetPlan $budgetPlan, int $projectId): string
+    {
+        return 'realizations/' . $budgetPlan->company_id . '/' . $budgetPlan->id . '/' . $projectId;
+    }
+
+    private function storeAttachment(
+        ProjectExpense $expense,
+        UploadedFile $file,
+        string $type,
+        string $storagePath,
+        ?int $uploadedBy
+    ): void {
+        $extension = $file->getClientOriginalExtension();
+        $filename = uniqid($type . '_', true) . '.' . $extension;
+        $path = $file->storeAs($storagePath, $filename);
+
+        $expense->update([
+            "{$type}_path" => $path,
+            "{$type}_original_name" => $file->getClientOriginalName(),
+            "{$type}_mime" => $file->getMimeType(),
+            "{$type}_size" => $file->getSize(),
+            "{$type}_uploaded_by" => $uploadedBy,
+            "{$type}_uploaded_at" => now(),
+        ]);
+    }
+
+    private function deleteAttachmentFile(?string $path): void
+    {
+        if ($path && Storage::exists($path)) {
+            Storage::delete($path);
+        }
     }
 
     private function validatePayload(Request $request, bool $withItem = true): array
@@ -117,6 +230,8 @@ class BudgetPlanRealizationController extends Controller
             'notes' => ['nullable', 'string'],
             'vendor_id' => ['nullable', 'integer'],
             'vendor_new_name' => ['nullable', 'string', 'max:255'],
+            'invoice_proof_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'bank_mutation_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
 
         if ($withItem) {
@@ -137,21 +252,6 @@ class BudgetPlanRealizationController extends Controller
         return $data;
     }
 
-    private function resolveBudgetPlanItem(BudgetPlan $budgetPlan, int $itemId): BudgetPlanItem
-    {
-        $item = BudgetPlanItem::query()
-            ->where('budget_plan_id', $budgetPlan->id)
-            ->find($itemId);
-
-        if (! $item) {
-            throw ValidationException::withMessages([
-                'budget_plan_item_id' => 'Item budget plan tidak valid.',
-            ]);
-        }
-
-        return $item;
-    }
-
     private function assertItemCanBeRealized(BudgetPlanItem $item): void
     {
         if (! $item->project_id) {
@@ -163,6 +263,27 @@ class BudgetPlanRealizationController extends Controller
         if (! $item->chart_account_id) {
             throw ValidationException::withMessages([
                 'budget_plan_item_id' => 'Item BP tidak memiliki akun.',
+            ]);
+        }
+    }
+
+    private function assertAmountWithinRemaining(BudgetPlanItem $item, float $amount, ?int $excludeExpenseId = null): void
+    {
+        $query = ProjectExpense::query()
+            ->where('budget_plan_item_id', $item->id)
+            ->where('expense_source', ProjectExpense::SOURCE_BUDGET_PLAN_REALIZATION);
+
+        if ($excludeExpenseId !== null) {
+            $query->where('id', '!=', $excludeExpenseId);
+        }
+
+        $currentRealized = (float) $query->sum('amount');
+        $allocated = (float) $item->line_total;
+        $remaining = round($allocated - $currentRealized, 2);
+
+        if (round($amount, 2) > $remaining) {
+            throw ValidationException::withMessages([
+                'unit_price' => 'Nominal realisasi melebihi sisa budget plan.',
             ]);
         }
     }
