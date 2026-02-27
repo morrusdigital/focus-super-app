@@ -11,17 +11,17 @@
 <div class="sidebar-wrapper">
   <div>
     <div class="logo-wrapper">
-      <a href="{{ url('/') }}"><img class="img-fluid for-light" src="../assets/images/logo/logo.png" alt=""></a>
+      <a href="{{ url('/') }}"><img class="img-fluid for-light" style="max-width:180px;" src="../assets/images/logo/logo-focus-group.svg" alt="Focus Group"></a>
       <div class="back-btn"><i class="fa fa-angle-left"></i></div>
       <div class="toggle-sidebar"><i class="fa fa-cog status_toggle middle sidebar-toggle"></i></div>
     </div>
-    <div class="logo-icon-wrapper"><a href="{{ url('/') }}"><img class="img-fluid" src="../assets/images/logo/logo-icon1.png" alt=""></a></div>
+    <div class="logo-icon-wrapper"><a href="{{ url('/') }}"><img class="img-fluid" style="max-width:40px;" src="../assets/images/logo/logo-focus-group.svg" alt="Focus Group"></a></div>
     <nav class="sidebar-main">
       <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
       <div id="sidebar-menu">
         <ul class="sidebar-links" id="simple-bar">
           <li class="back-btn">
-            <a href="{{ url('/') }}"><img class="img-fluid" src="../assets/images/logo/logo-icon.png" alt=""></a>
+            <a href="{{ url('/') }}"><img class="img-fluid" style="max-width:40px;" src="../assets/images/logo/logo-focus-group.svg" alt="Focus Group"></a>
             <div class="mobile-back text-end"><span>Back</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
           </li>
           <li class="sidebar-main-title">
