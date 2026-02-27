@@ -48,7 +48,7 @@
       <div class="page-header">
         <div class="header-wrapper row m-0">
           <div class="header-logo-wrapper col-auto p-0">
-            <div class="logo-wrapper"><a href="{{ url('/') }}"><img class="img-fluid" src="../assets/images/logo/login.png" alt=""></a></div>
+            <div class="logo-wrapper"><a href="{{ url('/') }}"><img class="img-fluid" style="max-width:160px;" src="../assets/images/logo/logo-focus-group.svg" alt="Focus Group"></a></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
           </div>
           <div class="nav-right col-8 pull-right right-header p-0 ms-auto">

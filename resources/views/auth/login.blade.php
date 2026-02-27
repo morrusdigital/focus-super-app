@@ -48,7 +48,7 @@
         <div class="col-12 p-0">
           <div class="login-card">
             <div>
-              <div><a class="logo" href="{{ url('/') }}"><img class="img-fluid for-light" src="../assets/images/logo/login.png" alt="loginpage"></a></div>
+              <div><a class="logo" href="{{ url('/') }}"><img class="img-fluid for-light" style="max-width:300px;" src="../assets/images/logo/logo-focus-group.svg" alt="Focus Group"></a></div>
               <div class="login-main">
                 <form class="theme-form" method="post" action="{{ route('login.store') }}">
                   @csrf
