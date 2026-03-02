@@ -21,6 +21,7 @@ use App\Http\Controllers\TaxMasterController;
 use App\Http\Controllers\TaskProjectController;
 use App\Http\Controllers\TaskProjectKanbanController;
 use App\Http\Controllers\TaskProjectTaskController;
+use App\Http\Controllers\RoleMenuController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -102,6 +103,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('budget-plan-categories', BudgetPlanCategoryController::class);
     Route::resource('chart-accounts', ChartAccountController::class);
     Route::resource('tax-masters', TaxMasterController::class);
+
+    Route::get('role-menus', [RoleMenuController::class, 'index'])->name('role-menus.index');
+    Route::get('role-menus/{role}/edit', [RoleMenuController::class, 'edit'])->name('role-menus.edit');
+    Route::put('role-menus/{role}', [RoleMenuController::class, 'update'])->name('role-menus.update');
 
     Route::resource('users', UserController::class);
     Route::post('users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
