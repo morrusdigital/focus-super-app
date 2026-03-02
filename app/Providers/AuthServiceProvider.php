@@ -11,8 +11,10 @@ use App\Models\Task;
 use App\Models\TaskProject;
 use App\Models\TaskProjectTask;
 use App\Models\TaxMaster;
+use App\Models\RoleMenu;
 use App\Models\User;
 use App\Policies\BudgetPlanPolicy;
+use App\Policies\RoleMenuPolicy;
 use App\Policies\BudgetPlanCategoryPolicy;
 use App\Policies\ChartAccountPolicy;
 use App\Policies\CompanyBankAccountPolicy;
@@ -42,6 +44,7 @@ class AuthServiceProvider extends ServiceProvider
         CompanyBankAccount::class => CompanyBankAccountPolicy::class,
         TaxMaster::class => TaxMasterPolicy::class,
         User::class => UserPolicy::class,
+        RoleMenu::class => RoleMenuPolicy::class,
     ];
 
     /**

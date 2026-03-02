@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         $now = now();
 
+        // Seed role-menu configuration
+        $this->call(RoleMenuSeeder::class);
+
         $holdingId = DB::table('companies')->insertGetId([
             'name' => 'Focus Group Capital',
             'parent_id' => null,
